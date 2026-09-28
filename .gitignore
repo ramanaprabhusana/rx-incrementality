@@ -1,0 +1,21 @@
+# Data — never commit raw or processed CMS extracts
+data/raw/*
+data/processed/*
+!data/**/.gitkeep
+*.csv
+*.parquet
+*.zip
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# OS / editor
+.DS_Store

@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rx-incrementality"
+version = "0.1.0"
+description = "Causal estimators for the effect of pharmaceutical industry payments on physician prescribing, benchmarked against simulated ground truth."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+keywords = ["causal-inference", "health-policy", "commercial-analytics", "open-payments", "medicare-part-d"]
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+]
+dependencies = [
+    "numpy>=1.24",
+    "pandas>=2.0",
+    "scipy>=1.10",
+]
+
+[project.optional-dependencies]
+data = ["requests>=2.31"]
+dev = ["pytest>=7.4"]
+
+[project.scripts]
+rxinc = "rxinc.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
