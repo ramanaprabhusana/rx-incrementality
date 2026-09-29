@@ -563,3 +563,144 @@ def interrupted_time_series(
         true_effect=None,
     )
     return level, slope
+
+def triple_diff(
+    frame: pd.DataFrame,
+    outcome: str = "log_rx",
+    treatment: str = "treated",
+    unit: str = "physician_year",
+    product: str = "drug_year",
+    cluster_on: str = "physician_id",
+) -> Estimate:
+    """Physician-by-year and drug-by-year fixed effects on a drug-level panel.
+
+    Fits
+
+        log(claims_ijt) = tau * Paid_ijt + alpha_it + delta_jt + e_ijt
+
+    where ``alpha_it`` absorbs everything about a physician in a year, including
+    their whole prescribing trajectory, and ``delta_jt`` absorbs national
+    drug-level shocks such as launches, guideline changes and competitor entry.
+
+    ``tau`` is therefore identified only from variation within a physician-year
+    across drugs: does this physician prescribe more of the drug they were paid
+    about than of competing drugs they were not paid about, in the same year.
+
+    That makes the estimator robust to selection on physician momentum, which
+    defeats :func:`twoway_fe` and every other physician-level design here. It is
+    *not* robust to selection on drug-specific momentum, because that varies
+    within the physician-year. Use :func:`rxinc.diagnostics.pretrend_test` on a
+    drug-level event study to tell the two apart.
+
+    Args:
+        frame: Physician-drug-year panel.
+        outcome: Outcome column, in logs.
+        treatment: Binary or continuous exposure column.
+        unit: Composite physician-by-period key to absorb.
+        product: Composite drug-by-period key to absorb.
+        cluster_on: Column to cluster standard errors on. Physician is the right
+            level, since a physician's drugs share their unobserved shocks.
+
+    Returns:
+        The estimate, with cluster-robust standard errors.
+
+    Raises:
+        ValueError: If required columns are absent, or the treatment has no
+            variation left after absorbing both fixed effects, which means the
+            design is not identified on this panel.
+    """
+    required = {outcome, treatment, unit, product, cluster_on}
+    missing = sorted(required - set(frame.columns))
+    if missing:
+        raise ValueError(f"triple_diff needs columns {missing}")
+
+    demeaned = _within_transform(frame, [outcome, treatment], unit=unit, time=product)
+    y, d = demeaned[:, 0], demeaned[:, 1:]
+
+    residual_variation = float(np.abs(d).max())
+    if residual_variation < 1e-10:
+        raise ValueError(
+            "Treatment has no variation within physician-year across drugs; "
+            "tau is not identified. Every physician was paid about all or none "
+            "of their drugs."
+        )
+
+    n_unit = frame[unit].nunique()
+    n_product = frame[product].nunique()
+    beta, vcov, _ = _ols(
+        y,
+        d,
+        cluster=frame[cluster_on].to_numpy(),
+        absorbed=n_unit + n_product - 1,
+    )
+    return Estimate(
+        name="Triple diff (physician-yr + drug-yr)",
+        coef=float(beta[0]),
+        se=float(np.sqrt(vcov[0, 0])),
+        n_obs=len(frame),
+        n_clusters=int(frame[cluster_on].nunique()),
+        true_effect=_true_effect(frame),
+    )
+
+
+def drug_event_study(
+    frame: pd.DataFrame,
+    leads: int = 3,
+    lags: int = 4,
+    outcome: str = "log_rx",
+    unit: str = "physician_year",
+    product: str = "drug_year",
+    cluster_on: str = "physician_id",
+) -> EventStudyResult:
+    """Event study around payment onset, inside the triple-difference design.
+
+    Relative period -1 is omitted and endpoints are binned, as in
+    :func:`event_study`, but the absorbed effects are physician-by-year and
+    drug-by-year rather than physician and period.
+
+    The leads are the diagnostic that matters. Under selection on physician
+    momentum they should be flat, because that momentum is absorbed. Under
+    selection on drug-specific momentum they will trend, revealing that the
+    within-physician comparison is contaminated too.
+
+    Args:
+        frame: Physician-drug-year panel with ``event_time``.
+        leads: Pre-onset periods to estimate, excluding the reference.
+        lags: Post-onset periods to estimate.
+        outcome: Outcome column, in logs.
+        unit: Composite physician-by-period key to absorb.
+        product: Composite drug-by-period key to absorb.
+        cluster_on: Clustering column.
+
+    Returns:
+        Coefficients, standard errors and covariance by relative period.
+    """
+    work = frame.copy()
+    rel = work["event_time"].to_numpy(dtype=float)
+    is_treated_pair = ~np.isnan(rel)
+    rel_clipped = np.clip(rel, -leads, lags)
+
+    rel_grid = [r for r in range(-leads, lags + 1) if r != -1]
+    columns = []
+    for r in rel_grid:
+        name = f"_rel_{r}"
+        work[name] = (is_treated_pair & (rel_clipped == r)).astype(float)
+        columns.append(name)
+
+    demeaned = _within_transform(work, [outcome, *columns], unit=unit, time=product)
+    y, X = demeaned[:, 0], demeaned[:, 1:]
+    beta, vcov, _ = _ols(
+        y,
+        X,
+        cluster=work[cluster_on].to_numpy(),
+        absorbed=work[unit].nunique() + work[product].nunique() - 1,
+    )
+    return EventStudyResult(
+        rel_periods=np.array(rel_grid),
+        coefs=beta,
+        ses=np.sqrt(np.diag(vcov)),
+        vcov=vcov,
+        n_obs=len(work),
+        n_clusters=int(work[cluster_on].nunique()),
+        true_effect=_true_effect(frame),
+    )

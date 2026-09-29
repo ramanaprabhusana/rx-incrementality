@@ -13,13 +13,16 @@ The real-data pipeline (:mod:`rxinc.datasets`, :mod:`rxinc.linkage`,
 Medicare Part D so the same estimators can be pointed at it.
 """
 
+from rxinc.drugpanel import DrugPanelConfig, simulate_drug_panel
 from rxinc.estimators import (
     Estimate,
     EventStudyResult,
     did_never_treated,
+    drug_event_study,
     event_study,
     interrupted_time_series,
     naive_ols,
+    triple_diff,
     twoway_fe,
 )
 from rxinc.simulate import PanelConfig, simulate_panel
@@ -27,13 +30,17 @@ from rxinc.simulate import PanelConfig, simulate_panel
 __version__ = "0.1.0"
 
 __all__ = [
+    "DrugPanelConfig",
     "Estimate",
     "EventStudyResult",
     "PanelConfig",
     "did_never_treated",
+    "drug_event_study",
     "event_study",
     "interrupted_time_series",
     "naive_ols",
+    "simulate_drug_panel",
     "simulate_panel",
+    "triple_diff",
     "twoway_fe",
 ]
