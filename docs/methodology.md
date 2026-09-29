@@ -84,6 +84,6 @@ panel schema is identical to the one :func:`rxinc.panel.build_panel` produces
 from CMS data, so the same estimator code runs on both.
 
 Claims about bias are made from `monte_carlo`, which repeats the exercise over
-fresh seeds. A single panel cannot distinguish bias from sampling noise — an
+fresh seeds. A single panel cannot distinguish bias from sampling noise, an
 early version of this repository reported a spurious placebo effect that
 disappeared under replication.

@@ -1,22 +1,21 @@
 # rx-incrementality
 
 **When industry targets physicians whose prescribing is already rising, every
-standard causal design gets the answer wrong — and none of them says so.**
+standard causal design gets the answer wrong, and none of them says so.**
 
 Pharmaceutical manufacturers reported **$14.67 billion** in payments to
 clinicians in Open Payments Program Year 2025 across 17.07 million records, the
 highest annual total since the Sunshine Act began collecting in 2013. Whether
 those payments *change* prescribing, rather than merely tracking it, is the
-question that decides how the spend should be read — by regulators, by health
+question that decides how the spend should be read, by regulators, by health
 systems, and by the commercial analytics teams who plan it.
 
 The evidence base is weaker than the volume of literature suggests. A
 systematic review in *Annals of Internal Medicine* found **21 of 36 studies at
 serious risk of bias**, and named the mechanism: dose-response patterns "may
 also reflect residual confounding if industry targets clinicians who already
-have higher baseline prescribing volumes." It closed by calling for designs —
-instrumental variables, interrupted time series, policy natural experiments —
-that move past association.
+have higher baseline prescribing volumes." It closed by calling for designs (instrumental variables, interrupted time series,
+policy natural experiments) that move past association.
 
 This repository takes that concern seriously enough to measure it.
 
@@ -32,19 +31,19 @@ manufacturers choose whom to pay. Run the standard estimators.
 | Two-way fixed effects | 0.048 | **0.050** | 0.098 |
 | DiD vs never-treated | 0.048 | **0.048** | −0.007 |
 | ITS level change | 0.048 | **0.051** | 0.110 |
-| *95% CI coverage* | *88–93%* | *95–100%* | ***0%*** |
+| *95% CI coverage* | *88 to 93%* | *95 to 100%* | ***0%*** |
 
 *True effect = 0.050. Mean over 40 replications, 1,200 physicians × 16 quarters.*
 
 Read the last two columns together. When targeting keys on **levels**, panel
-methods work — they recover 0.050 and their intervals cover the truth 95–100%
+methods work, they recover 0.050 and their intervals cover the truth 95 to 100%
 of the time. When targeting keys on **momentum**, they break, and they break
 *incoherently*:
 
 - Two-way fixed effects **doubles** the effect (0.098).
 - Interrupted time series does the same (0.110).
 - DiD against never-treated **erases** it (−0.007), because it anchors on the
-  period before onset — a transitory peak — and mean reversion cancels the real
+  period before onset, a transitory peak, and mean reversion cancels the real
   effect. An Ashenfelter dip, inverted.
 
 **Coverage falls to 0% for all four.** Each reports a tight interval that
@@ -90,8 +89,8 @@ from rxinc.diagnostics import pretrend_test
 from rxinc.estimators import event_study
 
 panel = simulate_panel()
-print(twoway_fe(panel))                    # 0.0984 — nearly double the truth
-print(pretrend_test(event_study(panel)))   # FAIL — and it tells you why
+print(twoway_fe(panel))                    # 0.0984, nearly double the truth
+print(pretrend_test(event_study(panel)))   # FAIL, and it tells you why
 ```
 
 ## Real data
@@ -100,24 +99,24 @@ The same estimators run unchanged on CMS data, because
 `rxinc.panel.build_panel` emits the identical schema to the simulator.
 
 ```bash
-rxinc catalog                                  # 25 Part D years, 2016–2025 payments
+rxinc catalog                                  # 25 Part D years, 2016 to 2025 payments
 rxinc fetch-partd --state IN --max-rows 5000
 ```
 
 Both sources are public, key-free, and contain **no protected health
-information** — they are provider-level aggregates.
+information**, they are provider-level aggregates.
 
-- **Medicare Part D Prescribers** — actual adjudicated claim counts, ~1.42M
+- **Medicare Part D Prescribers**: actual adjudicated claim counts, ~1.42M
   prescribers per year. Not projections from a pharmacy sample, which is why
   validation studies use Part D as the benchmark.
-- **Open Payments** — every reportable manufacturer payment, bulk CSV per year.
+- **Open Payments**: every reportable manufacturer payment, bulk CSV per year.
 
 **A correction worth stating.** Secondary sources commonly assert that Open
 Payments carries no NPI and that linkage requires name-and-address matching.
 That is outdated: the current detailed general-payments schema includes
 `Covered_Recipient_NPI`, verified against the published 91-field data
-dictionary. `rxinc.linkage` keys on NPI — validated against its Luhn check
-digit — and keeps a surname-plus-state fallback for older years, reporting how
+dictionary. `rxinc.linkage` keys on NPI, validated against its Luhn check
+digit, and keeps a surname-plus-state fallback for older years, reporting how
 many records took each route. Ambiguous blocks are left unmatched rather than
 resolved arbitrarily, because a wrong link fabricates a treatment assignment.
 
@@ -156,11 +155,11 @@ unbalanced panels. Standard errors cluster on physician throughout.
 
 ## Sources
 
-- [Open Payments — CMS](https://www.cms.gov/priorities/key-initiatives/open-payments)
-- [Medicare Part D Prescribers by Provider — CMS](https://data.cms.gov/provider-summary-by-type-of-service/medicare-part-d-prescribers/medicare-part-d-prescribers-by-provider)
-- [Are Financial Payments From the Pharmaceutical Industry Associated With Physician Prescribing? A Systematic Review — *Annals of Internal Medicine*](https://doi.org/10.7326/M20-5665)
-- [Association between industry payments and prescribing costly medications — *BMC Health Services Research*](https://link.springer.com/article/10.1186/s12913-018-3043-8)
-- [Comparison of antibiotic prescriptions in IQVIA Xponent and Medicare Part D — PMC](https://pmc.ncbi.nlm.nih.gov/articles/PMC9972535/)
+- [Open Payments, CMS](https://www.cms.gov/priorities/key-initiatives/open-payments)
+- [Medicare Part D Prescribers by Provider, CMS](https://data.cms.gov/provider-summary-by-type-of-service/medicare-part-d-prescribers/medicare-part-d-prescribers-by-provider)
+- [Are Financial Payments From the Pharmaceutical Industry Associated With Physician Prescribing? A Systematic Review, *Annals of Internal Medicine*](https://doi.org/10.7326/M20-5665)
+- [Association between industry payments and prescribing costly medications, *BMC Health Services Research*](https://link.springer.com/article/10.1186/s12913-018-3043-8)
+- [Comparison of antibiotic prescriptions in IQVIA Xponent and Medicare Part D, PMC](https://pmc.ncbi.nlm.nih.gov/articles/PMC9972535/)
 
 ## License
 

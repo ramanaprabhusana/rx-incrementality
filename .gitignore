@@ -1,4 +1,4 @@
-# Data — never commit raw or processed CMS extracts
+# Data: never commit raw or processed CMS extracts
 data/raw/*
 data/processed/*
 !data/**/.gitkeep

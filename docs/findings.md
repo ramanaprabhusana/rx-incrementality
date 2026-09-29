@@ -15,7 +15,7 @@ prescribing volume), averaged over 40 replications.
 
 Everything except naive OLS recovers the truth. Naive OLS is biased *even
 under random assignment*, because payment relationships accumulate over time
-while the market grows — with no period controls it attributes secular growth
+while the market grows, with no period controls it attributes secular growth
 to treatment. Worth noting on its own: the uncontrolled comparison is wrong
 before confounding enters the picture.
 
@@ -29,7 +29,7 @@ before confounding enters the picture.
 | ITS level change | 0.0510 | +0.0010 | 0.0128 | 100% |
 
 When industry targets persistently high-volume prescribers, the naive estimate
-is **12× the true effect** — it reports +0.61 when the truth is +0.05, and its
+is **12× the true effect**, it reports +0.61 when the truth is +0.05, and its
 confidence interval never contains the truth. The panel designs are all fine,
 because the confounder is time-invariant and gets differenced away.
 
@@ -53,7 +53,7 @@ estimator fails, and they fail in different directions:
 - DiD against never-treated **erases the effect entirely**, returning −0.007.
   It anchors on period $g-1$, which under dynamic targeting is a transitory
   peak; subsequent mean reversion cancels the real effect. This is an
-  Ashenfelter dip inverted — selection on a temporary high rather than a
+  Ashenfelter dip inverted, selection on a temporary high rather than a
   temporary low.
 
 **Coverage is 0% for all four.** Every design reports a tight confidence
@@ -76,7 +76,7 @@ targeting, physicians who will later receive payments were already growing at
 0.032 log points per period before any payment, against 0.010 for those who
 never receive one.
 
-The placebo is unbiased under random assignment — verified across 30
+The placebo is unbiased under random assignment, verified across 30
 replications, mean +0.0006 against a Monte Carlo standard error of 0.0013.
 
 ## What this implies for the literature
@@ -88,14 +88,14 @@ who already have higher baseline prescribing volumes."
 
 These results sharpen that in a specific way. If targeting keys on *levels*,
 panel methods handle it and the published within-physician designs are
-defensible. If targeting keys on *momentum*, they do not — and the direction
+defensible. If targeting keys on *momentum*, they do not, and the direction
 of the error depends on the design, so a set of studies using different methods
 will not converge on the truth. They will disagree, and each will look
 internally precise.
 
 Which regime holds is an empirical question about how manufacturers actually
-target, and commercial analytics practice — dynamic cohorts updating on
-incoming prescription data — points toward momentum rather than levels.
+target, and commercial analytics practice, dynamic cohorts updating on
+incoming prescription data, points toward momentum rather than levels.
 
 The practical recommendation is narrow and testable: **report the pre-trend
 test and the placebo alongside any estimate.** They cost nothing, they are
