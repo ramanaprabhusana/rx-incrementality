@@ -1,162 +1,164 @@
 # rx-incrementality
 
-**When industry targets physicians whose prescribing is already rising, every
-standard causal design gets the answer wrong, and none of them says so.**
+**Standard causal designs cannot measure whether pharmaceutical payments change
+prescribing, because manufacturers target physicians on the very behaviour
+being measured. This repository shows how badly those designs fail, gives a
+design that survives the realistic case, and builds the reproducible pipeline
+over public CMS data.**
 
-Pharmaceutical manufacturers reported **$14.67 billion** in payments to
-clinicians in Open Payments Program Year 2025 across 17.07 million records, the
-highest annual total since the Sunshine Act began collecting in 2013. Whether
-those payments *change* prescribing, rather than merely tracking it, is the
-question that decides how the spend should be read, by regulators, by health
-systems, and by the commercial analytics teams who plan it.
+## Why this matters
 
-The evidence base is weaker than the volume of literature suggests. A
-systematic review in *Annals of Internal Medicine* found **21 of 36 studies at
-serious risk of bias**, and named the mechanism: dose-response patterns "may
-also reflect residual confounding if industry targets clinicians who already
-have higher baseline prescribing volumes." It closed by calling for designs (instrumental variables, interrupted time series,
-policy natural experiments) that move past association.
+Manufacturers reported **$14.67 billion** in payments to clinicians in Open
+Payments Program Year 2025, across 17.07 million records covering roughly 1.08
+million physicians. It is the highest annual total since the Sunshine Act began
+collecting in 2013.
 
-This repository takes that concern seriously enough to measure it.
+Whether that spend *changes* prescribing, rather than merely tracking it,
+decides how it should be read by regulators, by health systems, and by the
+commercial analytics teams who plan it. The evidence base is weaker than the
+volume of literature suggests: a systematic review in *Annals of Internal
+Medicine* found **21 of 36 studies at serious risk of bias**, named the
+mechanism, that dose-response patterns "may also reflect residual confounding
+if industry targets clinicians who already have higher baseline prescribing
+volumes," and called for designs that move past association.
 
-## The result
+## Finding 1: the standard designs fail, silently
 
-Simulate a physician panel where the true effect of a payment relationship is
-known to be exactly **+0.05 log points** (~5% more prescribing). Vary only how
-manufacturers choose whom to pay. Run the standard estimators.
+Simulate a physician panel where the true effect is known to be exactly **+0.05
+log points**. Vary only how manufacturers choose whom to pay.
 
-| Estimator | Random assignment | Targets **high** prescribers | Targets **rising** prescribers |
+| Estimator | Random | Targets **high** prescribers | Targets **rising** prescribers |
 | --- | ---: | ---: | ---: |
 | Naive pooled OLS | 0.092 | 0.606 | 0.612 |
 | Two-way fixed effects | 0.048 | **0.050** | 0.098 |
-| DiD vs never-treated | 0.048 | **0.048** | −0.007 |
+| DiD vs never-treated | 0.048 | **0.048** | -0.007 |
 | ITS level change | 0.048 | **0.051** | 0.110 |
 | *95% CI coverage* | *88 to 93%* | *95 to 100%* | ***0%*** |
 
-*True effect = 0.050. Mean over 40 replications, 1,200 physicians × 16 quarters.*
+If selection is on **levels**, panel methods work. If selection is on
+**momentum**, which is what dynamic-cohort commercial targeting actually does,
+they break incoherently: fixed effects and interrupted time series roughly
+double the effect, differences-in-differences erases it by anchoring on a
+transitory pre-onset peak. **Coverage falls to 0% for all four.** Each reports a
+tight interval that excludes the truth.
 
-Read the last two columns together. When targeting keys on **levels**, panel
-methods work, they recover 0.050 and their intervals cover the truth 95 to 100%
-of the time. When targeting keys on **momentum**, they break, and they break
-*incoherently*:
+## Finding 2: comparing drugs instead of physicians survives it
 
-- Two-way fixed effects **doubles** the effect (0.098).
-- Interrupted time series does the same (0.110).
-- DiD against never-treated **erases** it (−0.007), because it anchors on the
-  period before onset, a transitory peak, and mean reversion cancels the real
-  effect. An Ashenfelter dip, inverted.
+Open Payments attributes each payment to a specific product, and Part D reports
+prescribing by drug. So instead of comparing paid physicians to unpaid
+physicians, compare **drugs within the same physician-year**:
 
-**Coverage falls to 0% for all four.** Each reports a tight interval that
-excludes the truth. A study using any one of them would look precise and be
-wrong, and a literature using several would disagree without converging.
+```
+log(claims_ijt) = tau * Paid_ijt + alpha_it + delta_jt + e_ijt
+```
 
-## The part that is actionable
+The physician-by-year effect `alpha_it` absorbs that physician's entire
+trajectory by construction. Monte Carlo, 40 replications, true effect 0.050:
 
-The failure is invisible in the estimates and obvious in the diagnostics.
+| Selection regime | Physician-drug + period FE | Triple difference |
+| --- | --- | --- |
+| Random | 0.049, coverage 97.5% | 0.056, coverage 97.5% |
+| **Physician momentum** | **0.128, coverage 0%** | **0.056, coverage 97.5%** |
+| Drug-specific momentum | 0.205, coverage 0% | 0.094, coverage 47.5% |
 
-| Regime | Pre-trend test | Pre-period growth gap |
-| --- | --- | ---: |
-| Random | PASS (p = 0.13) | ~0.000 |
-| Targets high prescribers | PASS (p = 0.17) | +0.004 |
-| Targets rising prescribers | **FAIL (p = 4×10⁻¹⁰⁷)** | **+0.022** |
+The middle row is the result. The conventional design overstates by 2.6x with
+zero coverage; the triple difference is unbiased with correct coverage.
 
-A joint Wald test on pre-onset event-study coefficients separates the
-identified case from the unidentified one decisively. The balance table shows
-the mechanism: physicians who later receive payments were already growing at
-0.032 log points per quarter beforehand, against 0.010 for those who never do.
+**The bottom row is a real limitation, not a footnote.** Drug-specific targeting
+does break the design, because that confounder varies within the physician-year,
+which is the dimension identification relies on. The diagnostic separates the
+cases: pre-trends pass under physician momentum and reject at p ~ 1e-88 under
+drug momentum. Report the test with the estimate.
 
-So the recommendation is narrow and cheap: **publish the pre-trend test and a
-placebo alongside any estimate.** They run on the same data, cost nothing, and
-distinguish the regime where your number means something from the regime where
-it does not.
+## Verified feasibility on real data
+
+Both required margins of variation were measured on CMS data before the design
+was committed to.
+
+- **47.3%** of Indiana anticoagulant prescribers use two or more competing drugs
+  (DY2024, 5,695 physicians).
+- **59.6%** of physicians are paid about two or more diabetes brands (2023,
+  132,756 physicians).
+
+Payment sizes rule out a binary treatment: the median physician-brand-year total
+is **$33.32** and 97% of records are "Food and Beverage". Treatment is specified
+as `log(1 + amount)`.
+
+## Data acquired
+
+Diabetes agents (SGLT2, DPP-4, GLP-1), 23 brands, 2019 to 2024.
+
+| Source | Grain | Scale |
+| --- | --- | --- |
+| Part D by Provider and Drug | physician-drug-year | 3,491,826 rows, 142,022 to 268,694 prescribers per year |
+| Open Payments general | payment record | ~5.47M records matched across 6 years |
+
+Both public, key-free, and free of protected health information. See
+[docs/data-sources.md](docs/data-sources.md) for endpoints, limits and the
+acquisition constraints that shaped the tooling.
 
 ## Quickstart
 
 ```bash
 pip install -e ".[dev]"
 make demo      # reproduce the tables above
-make test      # 53 tests
-```
-
-```bash
-rxinc simulate --targeting dynamic --out panel.csv
-rxinc estimate --panel panel.csv --true-effect 0.05
+make test      # 70 tests
 ```
 
 ```python
-from rxinc import simulate_panel, twoway_fe
+from rxinc import simulate_drug_panel, triple_diff
+from rxinc.estimators import drug_event_study
 from rxinc.diagnostics import pretrend_test
-from rxinc.estimators import event_study
 
-panel = simulate_panel()
-print(twoway_fe(panel))                    # 0.0984, nearly double the truth
-print(pretrend_test(event_study(panel)))   # FAIL, and it tells you why
+panel = simulate_drug_panel()            # physician momentum selection
+print(triple_diff(panel))                # recovers the truth
+print(pretrend_test(drug_event_study(panel)))   # and confirms it is identified
 ```
-
-## Real data
-
-The same estimators run unchanged on CMS data, because
-`rxinc.panel.build_panel` emits the identical schema to the simulator.
 
 ```bash
-rxinc catalog                                  # 25 Part D years, 2016 to 2025 payments
-rxinc fetch-partd --state IN --max-rows 5000
+rxinc catalog
+python3 scripts/fetch_class_panel.py --class diabetes --start 2019 --end 2024
+python3 scripts/stream_open_payments.py --year 2023 --class diabetes
 ```
-
-Both sources are public, key-free, and contain **no protected health
-information**, they are provider-level aggregates.
-
-- **Medicare Part D Prescribers**: actual adjudicated claim counts, ~1.42M
-  prescribers per year. Not projections from a pharmacy sample, which is why
-  validation studies use Part D as the benchmark.
-- **Open Payments**: every reportable manufacturer payment, bulk CSV per year.
-
-**A correction worth stating.** Secondary sources commonly assert that Open
-Payments carries no NPI and that linkage requires name-and-address matching.
-That is outdated: the current detailed general-payments schema includes
-`Covered_Recipient_NPI`, verified against the published 91-field data
-dictionary. `rxinc.linkage` keys on NPI, validated against its Luhn check
-digit, and keeps a surname-plus-state fallback for older years, reporting how
-many records took each route. Ambiguous blocks are left unmatched rather than
-resolved arbitrarily, because a wrong link fabricates a treatment assignment.
 
 ## Layout
 
 ```
 src/rxinc/
-  simulate.py     panel DGP with three targeting regimes
-  estimators.py   naive OLS, two-way FE, DiD, event study, ITS
+  simulate.py     single-outcome panel DGP, three selection regimes
+  drugpanel.py    physician-drug-year DGP for validating the triple difference
+  estimators.py   naive OLS, two-way FE, DiD, event study, ITS, triple diff
   diagnostics.py  pre-trend test, placebo, balance, Monte Carlo
   datasets.py     CMS Part D and Open Payments clients
   linkage.py      NPI-keyed linkage with name fallback
   panel.py        CMS data to estimator-ready panel
-docs/
-  methodology.md  estimands, identification, inference
-  data-sources.md what the data is and is not
-  findings.md     full results and limitations
+scripts/          data acquisition
+docs/             problem statement, approach, methodology, data, findings
 ```
 
-Fixed effects use alternating projections rather than explicit dummies, and the
-transform is checked against a dummy-variable regression on both balanced and
-unbalanced panels. Standard errors cluster on physician throughout.
+Fixed effects use alternating projections, checked against explicit dummy
+regression on balanced and unbalanced panels. Errors cluster on physician.
 
 ## Honest limitations
 
-- Dynamic-targeting parameters are set to make the problem visible, not
-  calibrated to observed manufacturer behaviour. The *direction* of each
-  failure is a property of the design; the *magnitudes* are not estimates of
-  real-world bias.
-- The CMS pipeline is verified against live endpoints and unit-tested on
-  synthetic frames, but a full Open Payments × Part D panel has not yet been
-  built and analysed. That is the next step.
-- **No estimator here solves the dynamic case.** Instrumental variables and
-  policy natural experiments are not implemented. This repository establishes
-  that the problem is real and detectable; it does not claim to fix it.
+- **No real-data estimate has been produced yet.** Data is acquired and the
+  estimator is validated on simulation, but the physician-drug-year panel is not
+  yet built and no CMS number is reported here.
+- Simulation parameters are set to make each failure visible, not calibrated to
+  observed manufacturer behaviour. The *direction* of each failure is a property
+  of the design; the *magnitudes* are not estimates of real-world bias.
+- Part D is annual, so payments and prescribing within a year cannot be ordered.
+  This genuinely weakens short-run event studies and cannot be fixed with these
+  data.
+- The Open Payments API exposes 2019 onward only, so the usable window is six
+  annual periods.
+- The triple difference does not solve drug-specific targeting. It makes that
+  case detectable, which is not the same as solving it.
 
 ## Sources
 
 - [Open Payments, CMS](https://www.cms.gov/priorities/key-initiatives/open-payments)
-- [Medicare Part D Prescribers by Provider, CMS](https://data.cms.gov/provider-summary-by-type-of-service/medicare-part-d-prescribers/medicare-part-d-prescribers-by-provider)
+- [Medicare Part D Prescribers by Provider and Drug, CMS](https://data.cms.gov/provider-summary-by-type-of-service/medicare-part-d-prescribers/medicare-part-d-prescribers-by-provider-and-drug)
 - [Are Financial Payments From the Pharmaceutical Industry Associated With Physician Prescribing? A Systematic Review, *Annals of Internal Medicine*](https://doi.org/10.7326/M20-5665)
 - [Association between industry payments and prescribing costly medications, *BMC Health Services Research*](https://link.springer.com/article/10.1186/s12913-018-3043-8)
 - [Comparison of antibiotic prescriptions in IQVIA Xponent and Medicare Part D, PMC](https://pmc.ncbi.nlm.nih.gov/articles/PMC9972535/)
