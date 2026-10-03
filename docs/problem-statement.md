@@ -49,7 +49,10 @@ confounding if industry targets clinicians who already have higher baseline
 prescribing volumes," and closed by calling for instrumental variables,
 interrupted time series and policy natural experiments.
 
-That call has largely not been answered, for three reasons:
+That call was in fact answered, but in a literature the review did not cover.
+Health economics had already applied these designs: see
+[related-work.md](related-work.md). Within the clinical and health services
+literature the review surveyed, the gap is real, and three things sustain it:
 
 1. **The counterfactual is unobservable.** Randomising promotional exposure is
    neither legal nor commercially plausible, so there is no experimental

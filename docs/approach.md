@@ -41,8 +41,15 @@ log(claims_ijt) = tau * Paid_ijt + alpha_it + delta_jt + e_ijt
 - `tau` is identified only from variation within a physician-year, across drugs.
 
 This is a triple difference, the within-firm across-product identification
-standard in industrial organisation. It is materially stronger than the
-physician-level designs that dominate the published literature on this question.
+standard in industrial organisation.
+
+**This design is not new, and this repository did not originate it.** Carey,
+Lieber and Miller (2021, Journal of Public Economics) use fixed effects for each
+physician-drug combination on monthly Open Payments and Part D enrollee data for
+2013 to 2015, motivated by the same targeting problem, and already report the
+pre-trend result. Their monthly granularity is strictly better than the annual
+public files used here. See [related-work.md](related-work.md) for what is and
+is not contributed here.
 
 ## Verified feasibility
 
@@ -105,10 +112,13 @@ in kind, not only degree.
    precisely because Dr. X's prescribing of drug A specifically is rising.
    `alpha_it` does not absorb this. Test with a physician-drug level event study
    and pre-trend test, reusing the existing diagnostics.
-2. **Spillover onto comparison drugs.** If engagement about drug A suppresses
-   drug B, then B is not a clean control and tau is overstated. Testable by
-   checking whether payments about drug A move the same manufacturer's unrelated
-   products.
+2. **Spillover.** Two kinds, and the second is not hypothetical. If engagement
+   about drug A suppresses drug B, then B is not a clean control and tau is
+   overstated; testable by checking whether payments about drug A move the same
+   manufacturer's unrelated products. Separately, Agha and Zeltzer (2022, AEJ:
+   Policy) measured **peer** spillovers in anticoagulants and found they account
+   for roughly a quarter of the total effect. Untreated physicians are therefore
+   not a clean control either, and a design ignoring this is mis-specified.
 3. **Annual periodicity.** Part D is annual, so payments and prescribing within
    the same year cannot be ordered. This genuinely weakens short-run event
    studies and cannot be fixed with these data.
