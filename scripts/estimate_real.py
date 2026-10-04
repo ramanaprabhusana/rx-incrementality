@@ -1,17 +1,25 @@
 """Run the triple difference on the CMS diabetes panel.
 
     python3 scripts/estimate_real.py                 # full run
-    python3 scripts/estimate_real.py --sample 0.1    # 10% of physicians, for a dry run
+    python3 scripts/estimate_real.py --sample 0.05   # dry run on 5% of prescribers
 
-Writes ``results/estimates.json`` and prints every table. The specification set
-is fixed here in code, before results are seen, so that what gets reported is
-not chosen after the fact.
+Writes ``results/estimates.json``. Every specification carries a ``round``:
+
+1. Fixed before the first full run.
+2. Added after it: the 2-way and published-style comparisons.
+3. Added after discovering that Open Payments only covers non-physician
+   practitioners from 2021, which moved the primary population to physicians,
+   plus robustness checks the documentation had promised but not delivered.
+
+Labelling rounds is the honest substitute for a pre-registration this project
+never had.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import math
 import resource
 import sys
 import time
@@ -23,46 +31,76 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from rxinc.crosswalk import crosswalk_report  # noqa: E402
 from rxinc.diagnostics import pretrend_test  # noqa: E402
 from rxinc.drugdata import build_drug_panel, load_part_d, load_payments  # noqa: E402
-from rxinc.estimators import drug_event_study, triple_diff  # noqa: E402
+from rxinc.estimators import cohort_event_study, drug_event_study, triple_diff  # noqa: E402
 
 YEARS = list(range(2019, 2025))
 TWO_WAY = ("physician_year", "drug_year")
 CAREY = ("physician_drug", "drug_year")
 THREE_WAY = ("physician_year", "drug_year", "physician_drug")
 MIN_FAMILY_PEAK_CLAIMS = 100_000
+RESULTS: list[dict] = []
 
 
 def mem_gb() -> float:
-    return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 2**30  # bytes on macOS
+    return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 2**30
 
 
-def run(label: str, frame: pd.DataFrame, outcome: str, treatment: str,
-        controls: tuple[str, ...] = (), note: str = "",
-        absorb: tuple[str, ...] = THREE_WAY) -> dict:
+def pct(b: float) -> float:
+    return 100.0 * (math.exp(b) - 1.0)
+
+
+def run(label, frame, outcome, treatment, controls=(), absorb=THREE_WAY,
+        rnd=1, population="physician", note=""):
     t0 = time.time()
     sub = frame.dropna(subset=[outcome, treatment, *controls])
     try:
         est = triple_diff(sub, outcome=outcome, treatment=treatment,
                           controls=controls, absorb=absorb)
     except ValueError as exc:
-        print(f"  {label:44s} SKIPPED: {exc}", flush=True)
-        return {"spec": label, "skipped": str(exc), "absorb": list(absorb)}
+        print(f"  {label:50s} SKIPPED: {exc}", flush=True)
+        RESULTS.append({"spec": label, "round": rnd, "population": population, "skipped": str(exc)})
+        return None
     row = {
-        "spec": label, "absorb": list(absorb), "outcome": outcome, "treatment": treatment,
-        "controls": list(controls), "coef": est.coef, "se": est.se,
-        "ci_low": est.ci95[0], "ci_high": est.ci95[1], "t": est.t_stat,
-        "n_obs": est.n_obs, "n_physicians": est.n_clusters,
-        "extra": est.extra, "note": note, "seconds": round(time.time() - t0, 1),
+        "spec": label, "round": rnd, "population": population, "absorb": list(absorb),
+        "outcome": outcome, "treatment": treatment, "controls": list(controls),
+        "coef": est.coef, "se": est.se, "ci_low": est.ci95[0], "ci_high": est.ci95[1],
+        "t": est.t_stat, "n_obs": est.n_obs, "n_clusters": est.n_clusters,
+        "pct": pct(est.coef) if outcome == "log_rx" else None,
+        "extra": est.extra, "note": note,
     }
-    print(f"  {label:44s} {est.coef:+.4f} (se {est.se:.4f})  t={est.t_stat:6.1f}  "
-          f"n={est.n_obs:>10,}  [{row['seconds']}s]", flush=True)
+    RESULTS.append(row)
+    shown = f"{row['pct']:+5.1f}%" if row["pct"] is not None else f"{100*est.coef:+5.2f}pt"
+    print(f"  {label:50s} {est.coef:+.4f} (se {est.se:.4f}) {shown}  n={est.n_obs:>9,}  "
+          f"[{time.time()-t0:.0f}s]", flush=True)
     for k, v in est.extra.items():
         if not k.endswith("_se"):
-            print(f"  {'':44s}   {k}: {v:+.4f} (se {est.extra[k + '_se']:.4f})", flush=True)
-    return row
+            print(f"  {'':50s}   {k}: {v:+.4f} (se {est.extra[k + '_se']:.4f})", flush=True)
+    return est
+
+
+def event_studies(frame, label, population, rnd):
+    es_frame = frame[frame["exposure_known"] & ~frame["left_censored"]]
+    out = {}
+    for name, fn in (
+        ("cohort (Sun-Abraham)", lambda f: cohort_event_study(f, cohort_col="first_treat_period",
+                                                              time_col="year", absorb=THREE_WAY)),
+        ("pooled dummies", lambda f: drug_event_study(f, leads=3, lags=3, absorb=THREE_WAY)),
+    ):
+        t0 = time.time()
+        es = fn(es_frame)
+        pt = pretrend_test(es)
+        print(f"  [{label}] {name}  ({time.time()-t0:.0f}s)", flush=True)
+        for r, b, s in zip(es.rel_periods, es.coefs, es.ses):
+            print(f"     t{int(r):+d}: {b:+.4f} (se {s:.4f})  {pct(b):+5.1f}%", flush=True)
+        print(f"     {pt}", flush=True)
+        out[name] = {"rel_periods": es.rel_periods.tolist(), "coefs": es.coefs.tolist(),
+                     "ses": es.ses.tolist(), "pretrend_chi2": pt.statistic, "pretrend_df": pt.df,
+                     "pretrend_p": pt.p_value, "round": rnd, "population": population}
+        if es.detail is not None:
+            out[name]["cohorts"] = es.detail.to_dict(orient="records")
+    return out
 
 
 def main() -> int:
@@ -75,92 +113,101 @@ def main() -> int:
     t0 = time.time()
     claims, attrs = load_part_d([ROOT / f"data/raw/diabetes_dy{y}.csv" for y in YEARS])
     pay = load_payments({y: ROOT / args.op_dir / f"openpayments_diabetes_{y}.csv" for y in YEARS})
-    print(f"loaded: {len(claims):,} claim cells, {len(pay):,} payment cells "
-          f"({time.time()-t0:.0f}s, peak {mem_gb():.1f} GB)", flush=True)
-
     peak = claims.groupby(["family", "year"])["claims"].sum().groupby("family").max()
     families = sorted(peak[peak >= MIN_FAMILY_PEAK_CLAIMS].index)
+    print(f"loaded {len(claims):,} claim cells, {len(pay):,} payment cells ({time.time()-t0:.0f}s)", flush=True)
 
     if args.sample < 1.0:
         rng = np.random.default_rng(20261004)
         npis = claims["npi"].unique()
         keep = set(rng.choice(npis, size=int(len(npis) * args.sample), replace=False))
-        claims, attrs = claims[claims.npi.isin(keep)], attrs[attrs.npi.isin(keep)]
-        pay = pay[pay.npi.isin(keep)]
-        print(f"sampled {len(keep):,} physicians ({args.sample:.0%})", flush=True)
+        claims, attrs, pay = claims[claims.npi.isin(keep)], attrs[attrs.npi.isin(keep)], pay[pay.npi.isin(keep)]
+        print(f"sampled {len(keep):,} prescribers", flush=True)
 
-    panel, report = build_drug_panel(claims, attrs, pay, families=families)
-    print(f"\nPANEL: {report}", flush=True)
-    print(f"families kept: {', '.join(report.families)}", flush=True)
-    print(f"families dropped (low volume): {', '.join(report.dropped_families)}", flush=True)
-    print(f"built in {time.time()-t0:.0f}s, peak {mem_gb():.1f} GB\n", flush=True)
+    panels, reports = {}, {}
+    for key, kw in (
+        ("physician", dict(population="physician")),
+        ("npp", dict(population="npp")),
+        ("physician_unbalanced", dict(population="physician", require_all_years=False, full_grid=False)),
+    ):
+        panels[key], reports[key] = build_drug_panel(claims, attrs, pay, families=families, **kw)
+        print(f"\nPANEL {key}: {reports[key]}", flush=True)
+    print(f"families: {', '.join(reports['physician'].families)}", flush=True)
+    print(f"built in {time.time()-t0:.0f}s, peak {mem_gb():.1f} GB", flush=True)
 
-    results: list[dict] = []
-    obs = panel[panel["any_rx"] == 1]
+    phys = panels["physician"]
+    obs = phys[phys["any_rx"] == 1]
 
-    print("== Primary (3-way: physician-year + drug-year + physician-drug) ==", flush=True)
-    results.append(run("intensive: log claims ~ paid (same year)", obs, "log_rx", "pay_any"))
-    results.append(run("extensive: prescribes at >=11 ~ paid", panel, "any_rx", "pay_any"))
-    results.append(run("intensive: log claims ~ log(1+$)", obs, "log_rx", "pay_log"))
+    print("\n== 1. Primary: physicians, 3-way fixed effects ==", flush=True)
+    run("intensive: log claims ~ paid", obs, "log_rx", "pay_any", rnd=3)
+    run("extensive: prescribes at >= 11 claims ~ paid", phys, "any_rx", "pay_any", rnd=3)
+    run("intensive: log claims ~ log(1 + $)", obs, "log_rx", "pay_log", rnd=3)
 
-    print("\n== Same, 2-way (no physician-drug effects), for comparison ==", flush=True)
-    results.append(run("intensive ~ paid [2-way]", obs, "log_rx", "pay_any", absorb=TWO_WAY))
-    results.append(run("extensive ~ paid [2-way]", panel, "any_rx", "pay_any", absorb=TWO_WAY))
-    results.append(run("intensive ~ paid + paid next year [2-way]", obs, "log_rx", "pay_any",
-                       controls=("pay_any_lead",), absorb=TWO_WAY))
+    print("\n== 2. Which fixed effects matter (falsification: next year's payment) ==", flush=True)
+    for name, ab in (("2-way: physician-year + drug-year", TWO_WAY),
+                     ("published: physician-drug + drug-year", CAREY),
+                     ("3-way: all three", THREE_WAY)):
+        run(f"{name}", obs, "log_rx", "pay_any", absorb=ab, rnd=2)
+        run(f"{name} + next year's payment", obs, "log_rx", "pay_any",
+            controls=("pay_any_lead",), absorb=ab, rnd=2)
 
-    print("\n== Published design (Carey, Lieber and Miller): physician-drug + drug-year ==", flush=True)
-    print("   [added after the first full run, to answer what physician-year effects add]", flush=True)
-    posthoc = "added after first full run; comparison to the published specification"
-    results.append(run("intensive ~ paid [Carey-style]", obs, "log_rx", "pay_any",
-                       absorb=CAREY, note=posthoc))
-    results.append(run("extensive ~ paid [Carey-style]", panel, "any_rx", "pay_any",
-                       absorb=CAREY, note=posthoc))
-    results.append(run("intensive ~ paid + paid next year [Carey-style]", obs, "log_rx", "pay_any",
-                       controls=("pay_any_lead",), absorb=CAREY, note=posthoc))
+    print("\n== 3. Timing ==", flush=True)
+    run("paid last year", obs, "log_rx", "pay_any_lag", rnd=1)
 
-    print("\n== Timing and anticipation ==", flush=True)
-    results.append(run("intensive ~ paid last year", obs, "log_rx", "pay_any_lag",
-                       note="2020-2024 only; 2018 payments unobserved"))
-    results.append(run("intensive ~ paid this year + paid next year", obs, "log_rx", "pay_any",
-                       controls=("pay_any_lead",),
-                       note="a large lead coefficient means targeting anticipates prescribing"))
+    print("\n== 4. Payment type and size ==", flush=True)
+    run("food only vs any non-food (speaker, consulting, travel)", obs, "log_rx", "pay_food_only",
+        controls=("pay_nonfood_any",), rnd=3, note="coef is food-only; non-food in extra")
+    run("payment >= $25", obs, "log_rx", "pay_ge25", rnd=3)
+    run("payment >= $100", obs, "log_rx", "pay_ge100", rnd=3)
 
-    print("\n== Peer spillover (same city, leave one out) ==", flush=True)
-    results.append(run("intensive ~ paid + peer share paid", obs, "log_rx", "pay_any",
-                       controls=("peer_pay_share",)))
+    print("\n== 5. Spillovers ==", flush=True)
+    run("paid + same-city peer share paid", obs, "log_rx", "pay_any",
+        controls=("peer_pay_share",), rnd=1)
+    run("paid + paid about another drug by same manufacturer", obs, "log_rx", "pay_any",
+        controls=("pay_same_mfr_other",), rnd=3)
 
-    print("\n== By drug class ==", flush=True)
+    print("\n== 6. Heterogeneity ==", flush=True)
     for cls in ("GLP-1", "SGLT2", "DPP-4"):
         sub = obs[obs.drug_class == cls]
-        if sub["family"].nunique() < 2:
-            print(f"  intensive, {cls} only{'':27s} SKIPPED: fewer than 2 families", flush=True)
-            results.append({"spec": f"intensive, {cls} only", "skipped": "fewer than 2 families"})
-            continue
-        results.append(run(f"intensive, {cls} only", sub, "log_rx", "pay_any"))
-
-    print("\n== GLP-1 era split ==", flush=True)
+        run(f"class: {cls}", sub, "log_rx", "pay_any", rnd=1)
+    for grp in ("Family or general practice", "Internal medicine", "Endocrinology",
+                "Cardiology", "Nephrology", "Other"):
+        run(f"specialty: {grp}", obs[obs.specialty_group == grp], "log_rx", "pay_any", rnd=3)
     g = obs[obs.drug_class == "GLP-1"]
-    results.append(run("intensive, GLP-1, 2019-2021", g[g.year <= 2021], "log_rx", "pay_any"))
-    results.append(run("intensive, GLP-1, 2022-2024 (Mounjaro, shortages)", g[g.year >= 2022], "log_rx", "pay_any"))
+    run("GLP-1, 2019-2021", g[g.year <= 2021], "log_rx", "pay_any", rnd=1)
+    run("GLP-1, 2022-2024", g[g.year >= 2022], "log_rx", "pay_any", rnd=1)
+    run("GLP-1, 2022-2024, excluding Mounjaro", g[(g.year >= 2022) & (g.family != "MOUNJARO")],
+        "log_rx", "pay_any", rnd=3)
+    run("all classes excluding Mounjaro (launch)", obs[obs.family != "MOUNJARO"], "log_rx", "pay_any", rnd=3)
 
-    print("\n== Event study, clean onsets only, 3-way (intensive margin) ==", flush=True)
-    es_frame = obs[~obs["left_censored"]].copy()
-    es = drug_event_study(es_frame, leads=3, lags=3, outcome="log_rx", absorb=THREE_WAY)
-    pt = pretrend_test(es)
-    for r, b, s in zip(es.rel_periods, es.coefs, es.ses):
-        print(f"  t{int(r):+d}: {b:+.4f} (se {s:.4f})", flush=True)
-    print(f"  {pt}", flush=True)
+    print("\n== 7. Other populations ==", flush=True)
+    npp = panels["npp"]
+    npp_obs = npp[npp["any_rx"] == 1]
+    run("non-physician practitioners, 2021-2024: intensive", npp_obs, "log_rx", "pay_any",
+        rnd=3, population="npp")
+    run("non-physician practitioners, 2021-2024: extensive", npp, "any_rx", "pay_any",
+        rnd=3, population="npp")
+    for grp in ("Nurse practitioner", "Physician assistant"):
+        run(f"specialty: {grp}", npp_obs[npp_obs.specialty_group == grp], "log_rx", "pay_any",
+            rnd=3, population="npp")
+    unb = panels["physician_unbalanced"]
+    run("physicians, unbalanced panel (all years present not required)", unb, "log_rx", "pay_any",
+        rnd=3, population="physician_unbalanced")
+
+    print("\n== 8. Event studies ==", flush=True)
+    events = {"physician": event_studies(phys[phys.any_rx == 1], "physicians", "physician", 3),
+              "npp": event_studies(npp_obs, "non-physician practitioners", "npp", 3)}
 
     out = {
         "generated": time.strftime("%Y-%m-%d"),
         "sample": args.sample,
-        "panel": {k: (v if not isinstance(v, (np.integer, np.floating)) else v.item())
-                  for k, v in report.__dict__.items()},
-        "estimates": results,
-        "event_study": {"rel_periods": es.rel_periods.tolist(), "coefs": es.coefs.tolist(),
-                        "ses": es.ses.tolist(), "pretrend_chi2": pt.statistic,
-                        "pretrend_df": pt.df, "pretrend_p": pt.p_value},
+        "rounds": {"1": "fixed before first full run",
+                   "2": "added after first full run: fixed-effect comparisons",
+                   "3": "added after discovering 2021 coverage of non-physician practitioners"},
+        "panels": {k: {kk: (vv.item() if isinstance(vv, (np.integer, np.floating)) else vv)
+                       for kk, vv in r.__dict__.items()} for k, r in reports.items()},
+        "estimates": RESULTS,
+        "event_studies": events,
     }
     path = ROOT / args.out
     path.parent.mkdir(parents=True, exist_ok=True)

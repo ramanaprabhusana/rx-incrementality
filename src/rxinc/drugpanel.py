@@ -62,7 +62,13 @@ class DrugPanelConfig:
         n_drugs: Number of competing drugs in the class.
         n_periods: Number of annual periods.
         tau: True causal effect of a payment relationship on prescribing of the
-            drug it concerns, in log points.
+            drug it concerns, in log points, in the onset year for the first
+            cohort.
+        tau_dynamic: Change in the effect per year since onset. Non-zero values
+            make effects build over time, which biases pooled event studies
+            under staggered adoption.
+        tau_cohort_slope: Change in the effect per year of later onset, making
+            effects differ across cohorts.
         targeting: One of :data:`VALID_DRUG_TARGETING`.
         sigma_physician: SD of the physician level effect.
         sigma_affinity: SD of the physician-drug affinity, capturing persistent
@@ -94,6 +100,8 @@ class DrugPanelConfig:
     n_drugs: int = 6
     n_periods: int = 8
     tau: float = 0.05
+    tau_dynamic: float = 0.0
+    tau_cohort_slope: float = 0.0
     targeting: str = "physician_trajectory"
     sigma_physician: float = 0.70
     sigma_affinity: float = 0.60
@@ -152,9 +160,10 @@ def simulate_drug_panel(config: DrugPanelConfig | None = None) -> pd.DataFrame:
     Returns:
         A tidy DataFrame with one row per physician-drug-year and columns:
         ``physician_id``, ``drug_id``, ``period``, ``log_rx``, ``rx_claims``,
-        ``treated``, ``first_treat_period``, ``event_time``, ``ever_treated``,
-        plus ``physician_year`` and ``drug_year`` composite keys ready for the
-        triple-difference transform.
+        ``treated``, ``cell_effect`` (the effect actually applied to that cell,
+        so heterogeneous targets can be computed exactly), ``first_treat_period``,
+        ``event_time``, ``ever_treated``, plus composite keys ``physician_year``,
+        ``drug_year`` and ``physician_drug``.
 
         ``df.attrs["true_effect"]`` carries ``tau``.
     """
@@ -175,6 +184,7 @@ def simulate_drug_panel(config: DrugPanelConfig | None = None) -> pd.DataFrame:
     alpha = np.zeros((n, t_max))
     y = np.zeros((n, j, t_max))
     treated = np.zeros((n, j, t_max), dtype=bool)
+    effect = np.zeros((n, j, t_max))
     first_treat = np.full((n, j), NEVER_TREATED, dtype=int)
 
     for period in range(t_max):
@@ -211,12 +221,19 @@ def simulate_drug_panel(config: DrugPanelConfig | None = None) -> pd.DataFrame:
             first_treat[onset] = period
 
         treated[:, :, period] = (first_treat != NEVER_TREATED) & (first_treat <= period)
+        effect[:, :, period] = np.where(
+            treated[:, :, period],
+            cfg.tau
+            + cfg.tau_dynamic * (period - first_treat)
+            + cfg.tau_cohort_slope * (first_treat - cfg.burn_in),
+            0.0,
+        )
         y[:, :, period] = (
             cfg.base_log_rx
             + affinity
             + alpha[:, period][:, None]
             + drug_year[:, period][None, :]
-            + cfg.tau * treated[:, :, period]
+            + effect[:, :, period]
             + pair_shock[:, :, period]
             + noise[:, :, period]
         )
@@ -234,6 +251,7 @@ def simulate_drug_panel(config: DrugPanelConfig | None = None) -> pd.DataFrame:
             "log_rx": y.reshape(-1),
             "rx_claims": np.rint(np.exp(y.reshape(-1))).astype(int),
             "treated": treated.reshape(-1),
+            "cell_effect": effect.reshape(-1),
             "first_treat_period": onset_long,
             "ever_treated": onset_long != NEVER_TREATED,
         }

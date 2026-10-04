@@ -193,3 +193,67 @@ def test_affinity_targeting_breaks_two_way_and_three_way_survives():
 def test_three_way_still_survives_physician_momentum():
     truth = DrugPanelConfig().tau
     assert _mean_coef("physician_trajectory", _three_way) == pytest.approx(truth, abs=0.015)
+
+
+def test_default_effects_are_homogeneous():
+    df = simulate_drug_panel(DrugPanelConfig(n_physicians=80))
+    assert np.allclose(df.loc[df.treated, "cell_effect"], DrugPanelConfig().tau)
+    assert (df.loc[~df.treated, "cell_effect"] == 0).all()
+
+
+def test_dynamic_effects_grow_with_time_since_onset():
+    df = simulate_drug_panel(DrugPanelConfig(n_physicians=200, tau=0.02, tau_dynamic=0.01))
+    by_e = df[df.treated].groupby("event_time")["cell_effect"].mean()
+    assert by_e.loc[0] == pytest.approx(0.02) and by_e.loc[2] == pytest.approx(0.04)
+
+
+def _heterogeneous_cfg(**kw):
+    return DrugPanelConfig(targeting="affinity", n_physicians=700, tau=0.03,
+                           tau_dynamic=0.02, tau_cohort_slope=-0.008, **kw)
+
+
+def test_cohort_event_study_recovers_heterogeneous_dynamic_path():
+    """Mean error within 3.5 Monte Carlo standard errors of zero at every period.
+
+    A fixed tolerance with few replications mistakes noise for bias: an earlier
+    version of this test failed at six replications, and 40 fresh replications
+    then showed every error within one standard error of zero.
+    """
+    from rxinc.estimators import cohort_event_study
+    base = _heterogeneous_cfg()
+    errs = {}
+    for r in range(12):
+        df = simulate_drug_panel(replace(base, seed=base.seed + r))
+        truth = df[df.treated].groupby("event_time")["cell_effect"].mean()
+        res = cohort_event_study(df)
+        for e, b in zip(res.rel_periods, res.coefs):
+            if -3 <= e <= 3:
+                errs.setdefault(int(e), []).append(b - (truth.get(e, 0.0) if e >= 0 else 0.0))
+    for e, v in errs.items():
+        v = np.asarray(v)
+        mc_se = v.std(ddof=1) / np.sqrt(len(v))
+        assert abs(v.mean()) < 3.5 * mc_se, f"event time {e}: {v.mean():+.4f} vs mc_se {mc_se:.4f}"
+
+
+def test_cohort_weights_sum_to_one_per_period():
+    from rxinc.estimators import cohort_event_study
+    res = cohort_event_study(simulate_drug_panel(_heterogeneous_cfg(n_periods=7)))
+    w = res.detail[res.detail.identified].groupby("e")["weight"].sum()
+    assert np.allclose(w, 1.0)
+    assert -1 not in set(res.rel_periods.tolist())
+
+
+def test_cohort_event_study_requires_never_treated():
+    from rxinc.estimators import cohort_event_study
+    df = simulate_drug_panel(DrugPanelConfig(n_physicians=60))
+    with pytest.raises(ValueError, match="never-treated"):
+        cohort_event_study(df[df.ever_treated])
+
+
+def test_event_study_drops_unreached_relative_periods():
+    """Asking for more lags than any pair reaches must not invent a zero estimate."""
+    df = simulate_drug_panel(DrugPanelConfig(n_physicians=200, n_periods=6, burn_in=2))
+    max_e = int(df["event_time"].max())
+    res = drug_event_study(df, leads=2, lags=max_e + 3)
+    assert res.rel_periods.max() <= max_e
+    assert (res.ses > 0).all()
