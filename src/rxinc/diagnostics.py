@@ -25,8 +25,8 @@ says so.  This module holds the checks that do:
 
 from __future__ import annotations
 
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, replace
-from typing import Callable, Mapping
 
 import numpy as np
 import pandas as pd
@@ -105,6 +105,85 @@ def pretrend_test(result: EventStudyResult) -> PreTrendTest:
         p_value=p_value,
         max_abs_coef=float(np.abs(b).max()),
         slope=slope,
+    )
+
+
+@dataclass
+class DetrendedEventStudy:
+    """Event-study coefficients net of an extrapolated linear pre-trend.
+
+    Attributes:
+        rel_periods: Relative periods, reference omitted.
+        coefs: Coefficients after subtracting the fitted trend.
+        ses: Delta-method standard errors, accounting for estimation of the slope.
+        slope: Fitted pre-trend per period, constrained through zero at the
+            reference period.
+        slope_se: Standard error of the slope.
+        vcov: Covariance of the adjusted coefficients.
+    """
+
+    rel_periods: np.ndarray
+    coefs: np.ndarray
+    ses: np.ndarray
+    slope: float
+    slope_se: float
+    vcov: np.ndarray
+
+    def post_average(self) -> tuple[float, float]:
+        """Mean adjusted post-onset coefficient and its standard error."""
+        post = (self.rel_periods >= 0).astype(float)
+        a = post / max(post.sum(), 1.0)
+        return float(a @ self.coefs), float(np.sqrt(max(a @ self.vcov @ a, 0.0)))
+
+
+def detrend_event_study(result: EventStudyResult, reference: int = -1) -> DetrendedEventStudy:
+    """Subtract a linear pre-trend extrapolated through the post period.
+
+    When pre-trends fail, post-period coefficients mix any effect with the
+    continuation of whatever was already happening. This fits a line through the
+    lead coefficients, constrained to pass through zero at the reference period
+    (where the normalisation puts it), by generalised least squares using their
+    full covariance, so a noisy early lead gets little weight. The fitted line is
+    then subtracted from every coefficient.
+
+    It is a sensitivity analysis, not identification: it assumes the
+    pre-existing trend would have continued linearly. Rambachan and Roth (2023)
+    formalise how far such assumptions can be relaxed.
+
+    Args:
+        result: A fitted event study with its covariance.
+        reference: The omitted relative period.
+
+    Returns:
+        Detrended coefficients with delta-method standard errors.
+
+    Raises:
+        ValueError: With no lead coefficients, the trend cannot be fitted.
+    """
+    rel = result.rel_periods.astype(float)
+    pre = result.rel_periods < 0
+    if not pre.any():
+        raise ValueError("No lead coefficients to fit a pre-trend on.")
+    x = rel[pre] - reference
+    v_pre = result.vcov[np.ix_(pre, pre)]
+    w = np.linalg.pinv(v_pre)
+    denom = float(x @ w @ x)
+    # slope = g' b_pre with g = W x / (x' W x); write it as a linear map on all coefficients.
+    g = np.zeros(len(rel))
+    g[pre] = (w @ x) / denom
+    slope = float(g @ result.coefs)
+    # adjusted = (I - d g') b, where d_k = rel_k - reference
+    d = rel - reference
+    A = np.eye(len(rel)) - np.outer(d, g)
+    adjusted = A @ result.coefs
+    vcov = A @ result.vcov @ A.T
+    return DetrendedEventStudy(
+        rel_periods=result.rel_periods,
+        coefs=adjusted,
+        ses=np.sqrt(np.clip(np.diag(vcov), 0, None)),
+        slope=slope,
+        slope_se=float(np.sqrt(max(g @ result.vcov @ g, 0.0))),
+        vcov=vcov,
     )
 
 

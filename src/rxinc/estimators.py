@@ -35,8 +35,8 @@ overstate precision.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Sequence
 
 import numpy as np
 import pandas as pd
@@ -308,7 +308,7 @@ def _absorb(
         worst = 0.0
         for j in range(values.shape[1]):
             col = values[:, j]
-            for (c, k), n in zip(codes, counts):
+            for (c, k), n in zip(codes, counts, strict=True):
                 m = np.bincount(c, weights=col, minlength=k) / n
                 col = col - m[c]
                 worst = max(worst, float(np.abs(m).max()))
@@ -853,7 +853,7 @@ def cohort_event_study(
              .dropna().query("e != @reference").astype(int)
              .value_counts().rename("n").reset_index().sort_values(["e", "g"]))
     columns = []
-    for g, ev in zip(cells["g"], cells["e"]):
+    for g, ev in zip(cells["g"], cells["e"], strict=True):
         name = f"_g{g}_e{ev}"
         work[name] = ((cohort == g) & (rel == ev)).astype(float)
         columns.append(name)

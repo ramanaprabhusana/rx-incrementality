@@ -338,6 +338,10 @@ def build_drug_panel(
 
     grid = grid.sort_values(["npi", "family", "year"]).reset_index(drop=True)
     by_pair = grid.groupby(["npi", "family"], sort=False)
+    # Above the suppression floor in every year the family exists. Treatment
+    # cannot change whether these pairs are observed, so an intensive-margin
+    # estimate on them is free of selection through the floor.
+    grid["pair_always_observed"] = by_pair["any_rx"].transform("min").astype(bool)
     grid["pay_any_lag"] = by_pair["pay_any"].shift(1)
     grid["pay_any_lead"] = by_pair["pay_any"].shift(-1)
 

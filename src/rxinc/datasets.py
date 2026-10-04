@@ -24,9 +24,10 @@ from __future__ import annotations
 import json
 import urllib.parse
 import urllib.request
+from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
 
 import pandas as pd
 
@@ -250,8 +251,7 @@ def iter_part_d(
         rows = _get_json(f"{api_url}?{query}")
         if not rows:
             return
-        for row in rows:
-            yield row
+        yield from rows
         fetched += len(rows)
         offset += len(rows)
         if len(rows) < size:

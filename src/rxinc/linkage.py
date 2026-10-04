@@ -201,7 +201,7 @@ def link_payments_to_prescribers(
         ref = ref[ref["_npi"].map(is_valid_npi)]
         blocks: dict[tuple[str, str], list[tuple[str, str]]] = {}
         for last, first, state, npi in zip(
-            ref["_last"], ref["_first"], ref["_state"], ref["_npi"]
+            ref["_last"], ref["_first"], ref["_state"], ref["_npi"], strict=True
         ):
             if last and state:
                 blocks.setdefault((last, state), []).append((first, npi))
@@ -212,7 +212,7 @@ def link_payments_to_prescribers(
         cand_state = sub[payment_state_col].astype(str).str.upper().str.strip()
 
         for idx, last, first, state in zip(
-            sub.index, cand_last, cand_first, cand_state
+            sub.index, cand_last, cand_first, cand_state, strict=True
         ):
             candidates = blocks.get((last, state))
             if not candidates:

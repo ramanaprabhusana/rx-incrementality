@@ -24,7 +24,7 @@ dependencies = [
 
 [project.optional-dependencies]
 data = ["requests>=2.31"]
-dev = ["pytest>=7.4"]
+dev = ["pytest>=7.4", "ruff>=0.5", "matplotlib>=3.7"]
 
 [project.scripts]
 rxinc = "rxinc.cli:main"
@@ -35,3 +35,10 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]

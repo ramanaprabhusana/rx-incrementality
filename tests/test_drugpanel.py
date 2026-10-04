@@ -226,7 +226,7 @@ def test_cohort_event_study_recovers_heterogeneous_dynamic_path():
         df = simulate_drug_panel(replace(base, seed=base.seed + r))
         truth = df[df.treated].groupby("event_time")["cell_effect"].mean()
         res = cohort_event_study(df)
-        for e, b in zip(res.rel_periods, res.coefs):
+        for e, b in zip(res.rel_periods, res.coefs, strict=True):
             if -3 <= e <= 3:
                 errs.setdefault(int(e), []).append(b - (truth.get(e, 0.0) if e >= 0 else 0.0))
     for e, v in errs.items():

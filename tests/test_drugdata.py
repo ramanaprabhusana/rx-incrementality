@@ -216,3 +216,10 @@ def test_controls_reported_and_do_not_disturb_treatment_on_simulation():
     base, with_ctrl = triple_diff(df), triple_diff(df, controls=["noise_ctrl"])
     assert "noise_ctrl" in with_ctrl.extra and "noise_ctrl_se" in with_ctrl.extra
     assert with_ctrl.coef == pytest.approx(base.coef, abs=0.01)
+
+
+def test_pair_always_observed(physicians):
+    panel, _ = physicians
+    # P1-Jardiance clears the floor every year; P2-Victoza only in 2020.
+    assert panel[(panel.npi == P1) & (panel.family == "JARDIANCE")].pair_always_observed.all()
+    assert not panel[(panel.npi == P2) & (panel.family == "VICTOZA")].pair_always_observed.any()
