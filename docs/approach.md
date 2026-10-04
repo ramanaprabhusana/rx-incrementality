@@ -27,8 +27,21 @@ in the same year**.
 For physician `i`, drug `j`, year `t`:
 
 ```
-log(claims_ijt) = tau * Paid_ijt + alpha_it + delta_jt + e_ijt
+log(claims_ijt) = tau * Paid_ijt + alpha_it + delta_jt + mu_ij + e_ijt
 ```
+
+**Revised after the first real-data run.** The original specification omitted
+`mu_ij`, the physician-by-drug effect. On CMS data that version reported a
++23% effect, and next year's payment predicted this year's prescribing almost as
+strongly as this year's payment did (+0.122), which is impossible as an effect
+and diagnostic of targeting. Representatives target physicians who already
+favour their drug. A simulated `affinity` regime reproduces this: without
+`mu_ij` the estimate is fourteen times the truth, with it the truth is recovered.
+All three effects are now absorbed; see [results.md](results.md).
+
+- `mu_ij` is a **physician-by-drug** fixed effect, absorbing a physician's
+  persistent preference for a particular drug, which is exactly what
+  representatives select on.
 
 - `alpha_it` is a **physician-by-year** fixed effect, absorbing everything about
   that physician in that year: overall prescribing trajectory, panel growth,
@@ -136,7 +149,7 @@ cannot be defined before 2019 and Part D years before 2019 are not usable here.
 ## Therapeutic class
 
 Diabetes agents (SGLT2 inhibitors, DPP-4 inhibitors, GLP-1 receptor agonists),
-23 brands. Chosen over anticoagulants because six manufacturers compete at
+29 brand families, of which 15 clear the volume threshold used in estimation. Chosen over anticoagulants because six manufacturers compete at
 meaningful volume (Lilly, Novo Nordisk, AstraZeneca, Boehringer Ingelheim,
 Merck, Janssen) rather than two, which yields more independent
 payment-to-product relationships. Anticoagulants reduce in practice to Eliquis
@@ -151,16 +164,16 @@ class.
 
 | Stage | Work | Status |
 | --- | --- | --- |
-| 1. Scope | Select therapeutic class | Done, diabetes |
-| 2. Acquire Part D | Filter by-drug to 23 brands, 2019 to 2024 | In progress |
-| 3. Acquire payments | Stream and filter Open Payments by product | In progress |
-| 4. Link | NPI join | Built and tested |
-| 5. Crosswalk | Open Payments product names to Part D brand names | Solved for this class, case normalisation |
-| 6. Panel | Physician x drug x year | To build |
-| 7. Estimate | Add `alpha_it` and `delta_jt` to existing FE code | To build |
-| 8. Validate | Extend simulator with a drug dimension, confirm the triple difference recovers a known effect under trajectory selection | To build |
+| 1. Scope | Select therapeutic class | Done: diabetes |
+| 2. Acquire Part D | Brand families, 2019 to 2024 | Done: 3,715,046 rows |
+| 3. Acquire payments | Stream and filter by brand family | Done: about 5.49M records |
+| 4. Link | NPI join | Done |
+| 5. Crosswalk | Brand families on both sides | Done: 28 of 29 families matched |
+| 6. Panel | Physician x family x year | Done: 7,654,946 cells |
+| 7. Estimate | Three-way fixed effects | Done: [results.md](results.md) |
+| 8. Validate | Simulated ground truth, four regimes | Done |
 
-Stage 8 matters and comes before believing any real-data number. The same
+Stage 8 came before believing any real-data number, and then had to be revisited after it. The same
 discipline applied to the existing estimators applies here: prove the design
 recovers a known effect on simulated data where truth exists, then point it at
 CMS data where it does not.
