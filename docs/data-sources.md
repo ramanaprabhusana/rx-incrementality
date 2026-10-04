@@ -100,6 +100,27 @@ Open Payments extracts are filtered by family during streaming. Exact-name
 filtering had missed XIGDUO (listed as XIGDUO XR), TRIJARDY XR, STEGLUJAN and
 SEGLUROMET, about 1% of records.
 
+## Who Open Payments covers, and when
+
+| Prescriber type | Covered recipient | Records in the 2019 and 2020 extracts |
+| --- | --- | ---: |
+| Physicians, including dentists and podiatrists | from 2013 | 948,651 and 605,178 |
+| Nurse practitioners, physician assistants, clinical nurse specialists, nurse midwives, CRNAs | from program year 2021 | 0 and 0 |
+| Pharmacists, physicians in training, registered nurses | never | |
+
+From 2021 non-physician practitioners receive about 360,000 to 390,000 records a
+year, roughly 37% of the total. Before 2021 their payments were simply not
+collected. A pipeline that treats a missing record as no payment will therefore
+see spurious 2021 onsets for every nurse practitioner who was already being
+visited. `rxinc.drugdata.coverage_class` classifies each prescriber from their
+Part D type and the panel marks pre-coverage exposure as missing.
+
+## Provenance
+
+`make provenance` writes `results/provenance.json`: for every input file, its
+source endpoint, row count, size, modification time and SHA-256, plus library
+versions. Re-fetched data can be checked against it.
+
 ## The CMS catalog changes shape
 
 Between two runs on the same day, data.cms.gov moved from one catalog record per

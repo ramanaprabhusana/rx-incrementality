@@ -1,61 +1,192 @@
 {
   "generated": "2026-10-04",
   "sample": 1.0,
-  "panel": {
-    "n_physicians": 89011,
-    "n_families": 15,
-    "years": [
-      2019,
-      2020,
-      2021,
-      2022,
-      2023,
-      2024
-    ],
-    "n_rows": 7654946,
-    "n_observed": 2199852,
-    "families": [
-      "BYDUREON",
-      "FARXIGA",
-      "INVOKANA",
-      "JANUMET",
-      "JANUVIA",
-      "JARDIANCE",
-      "MOUNJARO",
-      "ONGLYZA",
-      "OZEMPIC",
-      "RYBELSUS",
-      "SYNJARDY",
-      "TRADJENTA",
-      "TRULICITY",
-      "VICTOZA",
-      "XIGDUO"
-    ],
-    "dropped_families": [
-      "ADLYXIN",
-      "BYETTA",
-      "GLYXAMBI",
-      "INVOKAMET",
-      "JENTADUETO",
-      "KAZANO",
-      "KOMBIGLYZE",
-      "NESINA",
-      "OSENI",
-      "QTERN",
-      "SEGLUROMET",
-      "STEGLATRO",
-      "STEGLUJAN",
-      "TRIJARDY"
-    ],
-    "share_paid_cells": 0.12327559201593323,
-    "n_left_censored_pairs": 166642,
-    "n_clean_onset_pairs": 198466,
-    "n_never_paid_pairs": 970057,
-    "payment_match_rate": 0.688578084390024
+  "rounds": {
+    "1": "fixed before first full run",
+    "2": "added after first full run: fixed-effect comparisons",
+    "3": "added after discovering 2021 coverage of non-physician practitioners"
+  },
+  "panels": {
+    "physician": {
+      "population": "physician",
+      "n_physicians": 71869,
+      "n_families": 15,
+      "years": [
+        2019,
+        2020,
+        2021,
+        2022,
+        2023,
+        2024
+      ],
+      "n_rows": 6180734,
+      "n_rows_exposure_known": 6180734,
+      "n_observed": 1813546,
+      "families": [
+        "BYDUREON",
+        "FARXIGA",
+        "INVOKANA",
+        "JANUMET",
+        "JANUVIA",
+        "JARDIANCE",
+        "MOUNJARO",
+        "ONGLYZA",
+        "OZEMPIC",
+        "RYBELSUS",
+        "SYNJARDY",
+        "TRADJENTA",
+        "TRULICITY",
+        "VICTOZA",
+        "XIGDUO"
+      ],
+      "dropped_families": [
+        "ADLYXIN",
+        "BYETTA",
+        "GLYXAMBI",
+        "INVOKAMET",
+        "JENTADUETO",
+        "KAZANO",
+        "KOMBIGLYZE",
+        "NESINA",
+        "OSENI",
+        "QTERN",
+        "SEGLUROMET",
+        "STEGLATRO",
+        "STEGLUJAN",
+        "TRIJARDY"
+      ],
+      "share_paid_cells": 0.1309566145380144,
+      "n_left_censored_pairs": 166620,
+      "n_clean_onset_pairs": 139169,
+      "n_never_paid_pairs": 772246,
+      "payment_match_rate": 0.6487631104506608,
+      "excluded_by_coverage": {
+        "npp": 124700,
+        "not_covered": 8951
+      }
+    },
+    "npp": {
+      "population": "npp",
+      "n_physicians": 16988,
+      "n_families": 15,
+      "years": [
+        2019,
+        2020,
+        2021,
+        2022,
+        2023,
+        2024
+      ],
+      "n_rows": 1460968,
+      "n_rows_exposure_known": 1002292,
+      "n_observed": 383027,
+      "families": [
+        "BYDUREON",
+        "FARXIGA",
+        "INVOKANA",
+        "JANUMET",
+        "JANUVIA",
+        "JARDIANCE",
+        "MOUNJARO",
+        "ONGLYZA",
+        "OZEMPIC",
+        "RYBELSUS",
+        "SYNJARDY",
+        "TRADJENTA",
+        "TRULICITY",
+        "VICTOZA",
+        "XIGDUO"
+      ],
+      "dropped_families": [
+        "ADLYXIN",
+        "BYETTA",
+        "GLYXAMBI",
+        "INVOKAMET",
+        "JENTADUETO",
+        "KAZANO",
+        "KOMBIGLYZE",
+        "NESINA",
+        "OSENI",
+        "QTERN",
+        "SEGLUROMET",
+        "STEGLATRO",
+        "STEGLUJAN",
+        "TRIJARDY"
+      ],
+      "share_paid_cells": 0.13373248514404984,
+      "n_left_censored_pairs": 36544,
+      "n_clean_onset_pairs": 22696,
+      "n_never_paid_pairs": 195580,
+      "payment_match_rate": 0.03976799924482686,
+      "excluded_by_coverage": {
+        "physician": 217388,
+        "not_covered": 8951
+      }
+    },
+    "physician_unbalanced": {
+      "population": "physician",
+      "n_physicians": 217388,
+      "n_families": 15,
+      "years": [
+        2019,
+        2020,
+        2021,
+        2022,
+        2023,
+        2024
+      ],
+      "n_rows": 2629753,
+      "n_rows_exposure_known": 2629753,
+      "n_observed": 2629753,
+      "families": [
+        "BYDUREON",
+        "FARXIGA",
+        "INVOKANA",
+        "JANUMET",
+        "JANUVIA",
+        "JARDIANCE",
+        "MOUNJARO",
+        "ONGLYZA",
+        "OZEMPIC",
+        "RYBELSUS",
+        "SYNJARDY",
+        "TRADJENTA",
+        "TRULICITY",
+        "VICTOZA",
+        "XIGDUO"
+      ],
+      "dropped_families": [
+        "ADLYXIN",
+        "BYETTA",
+        "GLYXAMBI",
+        "INVOKAMET",
+        "JENTADUETO",
+        "KAZANO",
+        "KOMBIGLYZE",
+        "NESINA",
+        "OSENI",
+        "QTERN",
+        "SEGLUROMET",
+        "STEGLATRO",
+        "STEGLUJAN",
+        "TRIJARDY"
+      ],
+      "share_paid_cells": 0.21885363378233622,
+      "n_left_censored_pairs": 87963,
+      "n_clean_onset_pairs": 182103,
+      "n_never_paid_pairs": 673449,
+      "payment_match_rate": 0.6261179322561399,
+      "excluded_by_coverage": {
+        "npp": 124700,
+        "not_covered": 8951
+      }
+    }
   },
   "estimates": [
     {
-      "spec": "intensive: log claims ~ paid (same year)",
+      "spec": "intensive: log claims ~ paid",
+      "round": 3,
+      "population": "physician",
       "absorb": [
         "physician_year",
         "drug_year",
@@ -64,19 +195,21 @@
       "outcome": "log_rx",
       "treatment": "pay_any",
       "controls": [],
-      "coef": 0.03859771199386697,
-      "se": 0.0014940051539497914,
-      "ci_low": 0.03566946189212537,
-      "ci_high": 0.04152596209560856,
-      "t": 25.835059465373245,
-      "n_obs": 2199852,
-      "n_physicians": 89011,
+      "coef": 0.0389765971066024,
+      "se": 0.001630817842130856,
+      "ci_low": 0.03578019413602593,
+      "ci_high": 0.04217300007717888,
+      "t": 23.900031076232818,
+      "n_obs": 1813546,
+      "n_clusters": 71869,
+      "pct": 3.9746150297107485,
       "extra": {},
-      "note": "",
-      "seconds": 12.1
+      "note": ""
     },
     {
-      "spec": "extensive: prescribes at >=11 ~ paid",
+      "spec": "extensive: prescribes at >= 11 claims ~ paid",
+      "round": 3,
+      "population": "physician",
       "absorb": [
         "physician_year",
         "drug_year",
@@ -85,19 +218,21 @@
       "outcome": "any_rx",
       "treatment": "pay_any",
       "controls": [],
-      "coef": 0.02684629005204056,
-      "se": 0.0006570567743388631,
-      "ci_low": 0.02555845877433639,
-      "ci_high": 0.028134121329744733,
-      "t": 40.858402348950065,
-      "n_obs": 7654946,
-      "n_physicians": 89011,
+      "coef": 0.025099041286713406,
+      "se": 0.0007179100253798502,
+      "ci_low": 0.023691937636968897,
+      "ci_high": 0.026506144936457914,
+      "t": 34.96126311014164,
+      "n_obs": 6180734,
+      "n_clusters": 71869,
+      "pct": null,
       "extra": {},
-      "note": "",
-      "seconds": 2.4
+      "note": ""
     },
     {
-      "spec": "intensive: log claims ~ log(1+$)",
+      "spec": "intensive: log claims ~ log(1 + $)",
+      "round": 3,
+      "population": "physician",
       "absorb": [
         "physician_year",
         "drug_year",
@@ -106,19 +241,21 @@
       "outcome": "log_rx",
       "treatment": "pay_log",
       "controls": [],
-      "coef": 0.015365382081212874,
-      "se": 0.0004585332350201596,
-      "ci_low": 0.01446665694057336,
-      "ci_high": 0.016264107221852387,
-      "t": 33.509854701235184,
-      "n_obs": 2199852,
-      "n_physicians": 89011,
+      "coef": 0.016130424674325516,
+      "se": 0.0005051751993915988,
+      "ci_low": 0.015140281283517982,
+      "ci_high": 0.01712056806513305,
+      "t": 31.93035741610432,
+      "n_obs": 1813546,
+      "n_clusters": 71869,
+      "pct": 1.6261222301814593,
       "extra": {},
-      "note": "",
-      "seconds": 12.4
+      "note": ""
     },
     {
-      "spec": "intensive ~ paid [2-way]",
+      "spec": "2-way: physician-year + drug-year",
+      "round": 2,
+      "population": "physician",
       "absorb": [
         "physician_year",
         "drug_year"
@@ -126,39 +263,21 @@
       "outcome": "log_rx",
       "treatment": "pay_any",
       "controls": [],
-      "coef": 0.20920752451309954,
-      "se": 0.002170732938292586,
-      "ci_low": 0.20495288795404606,
-      "ci_high": 0.21346216107215302,
-      "t": 96.37644540357601,
-      "n_obs": 2199852,
-      "n_physicians": 89011,
+      "coef": 0.21169464510334826,
+      "se": 0.0023947974755142744,
+      "ci_low": 0.20700084205134028,
+      "ci_high": 0.21638844815535624,
+      "t": 88.39772351016346,
+      "n_obs": 1813546,
+      "n_clusters": 71869,
+      "pct": 23.577047889315494,
       "extra": {},
-      "note": "",
-      "seconds": 0.8
+      "note": ""
     },
     {
-      "spec": "extensive ~ paid [2-way]",
-      "absorb": [
-        "physician_year",
-        "drug_year"
-      ],
-      "outcome": "any_rx",
-      "treatment": "pay_any",
-      "controls": [],
-      "coef": 0.12574497259868908,
-      "se": 0.0007801443094799761,
-      "ci_low": 0.12421588975210833,
-      "ci_high": 0.12727405544526985,
-      "t": 161.18168276136936,
-      "n_obs": 7654946,
-      "n_physicians": 89011,
-      "extra": {},
-      "note": "",
-      "seconds": 0.9
-    },
-    {
-      "spec": "intensive ~ paid + paid next year [2-way]",
+      "spec": "2-way: physician-year + drug-year + next year's payment",
+      "round": 2,
+      "population": "physician",
       "absorb": [
         "physician_year",
         "drug_year"
@@ -168,22 +287,24 @@
       "controls": [
         "pay_any_lead"
       ],
-      "coef": 0.13800828408345875,
-      "se": 0.0020002453668304006,
-      "ci_low": 0.13408780316447116,
-      "ci_high": 0.14192876500244633,
-      "t": 68.99567741638987,
-      "n_obs": 1746258,
-      "n_physicians": 89011,
+      "coef": 0.14023311748461728,
+      "se": 0.0021824208597581796,
+      "ci_low": 0.13595557259949126,
+      "ci_high": 0.1445106623697433,
+      "t": 64.2557629788031,
+      "n_obs": 1441693,
+      "n_clusters": 71869,
+      "pct": 15.054197904936938,
       "extra": {
-        "pay_any_lead": 0.12174037363385745,
-        "pay_any_lead_se": 0.0020449567962919986
+        "pay_any_lead": 0.12185478127148493,
+        "pay_any_lead_se": 0.0022678912611475022
       },
-      "note": "",
-      "seconds": 1.0
+      "note": ""
     },
     {
-      "spec": "intensive ~ paid [Carey-style]",
+      "spec": "published: physician-drug + drug-year",
+      "round": 2,
+      "population": "physician",
       "absorb": [
         "physician_drug",
         "drug_year"
@@ -191,39 +312,21 @@
       "outcome": "log_rx",
       "treatment": "pay_any",
       "controls": [],
-      "coef": 0.06559862153431485,
-      "se": 0.0015123182927524992,
-      "ci_low": 0.06263447768051995,
-      "ci_high": 0.06856276538810975,
-      "t": 43.37620053178217,
-      "n_obs": 2199852,
-      "n_physicians": 89011,
+      "coef": 0.0720644098503805,
+      "se": 0.0016548605992223345,
+      "ci_low": 0.06882088307590473,
+      "ci_high": 0.07530793662485627,
+      "t": 43.547118037764385,
+      "n_obs": 1813546,
+      "n_clusters": 71869,
+      "pct": 7.472456468295641,
       "extra": {},
-      "note": "added after first full run; comparison to the published specification",
-      "seconds": 1.3
+      "note": ""
     },
     {
-      "spec": "extensive ~ paid [Carey-style]",
-      "absorb": [
-        "physician_drug",
-        "drug_year"
-      ],
-      "outcome": "any_rx",
-      "treatment": "pay_any",
-      "controls": [],
-      "coef": 0.037449662440640526,
-      "se": 0.0006653525063424536,
-      "ci_low": 0.03614557152820932,
-      "ci_high": 0.03875375335307173,
-      "t": 56.28544581053306,
-      "n_obs": 7654946,
-      "n_physicians": 89011,
-      "extra": {},
-      "note": "added after first full run; comparison to the published specification",
-      "seconds": 1.0
-    },
-    {
-      "spec": "intensive ~ paid + paid next year [Carey-style]",
+      "spec": "published: physician-drug + drug-year + next year's payment",
+      "round": 2,
+      "population": "physician",
       "absorb": [
         "physician_drug",
         "drug_year"
@@ -233,22 +336,75 @@
       "controls": [
         "pay_any_lead"
       ],
-      "coef": 0.044988043093711676,
-      "se": 0.0015422971228639423,
-      "ci_low": 0.04196514073289835,
-      "ci_high": 0.048010945454525,
-      "t": 29.169504647828102,
-      "n_obs": 1746258,
-      "n_physicians": 89011,
+      "coef": 0.0518317629814518,
+      "se": 0.0016667518207716028,
+      "ci_low": 0.04856492941273946,
+      "ci_high": 0.055098596550164136,
+      "t": 31.09746894259093,
+      "n_obs": 1441693,
+      "n_clusters": 71869,
+      "pct": 5.319854062540985,
       "extra": {
-        "pay_any_lead": 0.02551259213651432,
-        "pay_any_lead_se": 0.0015988378877550642
+        "pay_any_lead": 0.028217908920663268,
+        "pay_any_lead_se": 0.0017878149799768113
       },
-      "note": "added after first full run; comparison to the published specification",
-      "seconds": 1.6
+      "note": ""
     },
     {
-      "spec": "intensive ~ paid last year",
+      "spec": "3-way: all three",
+      "round": 2,
+      "population": "physician",
+      "absorb": [
+        "physician_year",
+        "drug_year",
+        "physician_drug"
+      ],
+      "outcome": "log_rx",
+      "treatment": "pay_any",
+      "controls": [],
+      "coef": 0.0389765971066024,
+      "se": 0.001630817842130856,
+      "ci_low": 0.03578019413602593,
+      "ci_high": 0.04217300007717888,
+      "t": 23.900031076232818,
+      "n_obs": 1813546,
+      "n_clusters": 71869,
+      "pct": 3.9746150297107485,
+      "extra": {},
+      "note": ""
+    },
+    {
+      "spec": "3-way: all three + next year's payment",
+      "round": 2,
+      "population": "physician",
+      "absorb": [
+        "physician_year",
+        "drug_year",
+        "physician_drug"
+      ],
+      "outcome": "log_rx",
+      "treatment": "pay_any",
+      "controls": [
+        "pay_any_lead"
+      ],
+      "coef": 0.024954565015527026,
+      "se": 0.0017933435517626076,
+      "ci_low": 0.021439611654072314,
+      "ci_high": 0.028469518376981737,
+      "t": 13.915105664500343,
+      "n_obs": 1441693,
+      "n_clusters": 71869,
+      "pct": 2.526853640613025,
+      "extra": {
+        "pay_any_lead": 0.00583792190031294,
+        "pay_any_lead_se": 0.0019374387159317179
+      },
+      "note": ""
+    },
+    {
+      "spec": "paid last year",
+      "round": 1,
+      "population": "physician",
       "absorb": [
         "physician_year",
         "drug_year",
@@ -257,45 +413,95 @@
       "outcome": "log_rx",
       "treatment": "pay_any_lag",
       "controls": [],
-      "coef": 0.04055542386246098,
-      "se": 0.0015095535719992358,
-      "ci_low": 0.037596698861342474,
-      "ci_high": 0.04351414886357948,
-      "t": 26.865839420822827,
-      "n_obs": 1917209,
-      "n_physicians": 89011,
+      "coef": 0.043037246551759736,
+      "se": 0.0016380115632069314,
+      "ci_low": 0.039826743887874154,
+      "ci_high": 0.04624774921564532,
+      "t": 26.274079816323496,
+      "n_obs": 1577894,
+      "n_clusters": 71869,
+      "pct": 4.397677866158656,
       "extra": {},
-      "note": "2020-2024 only; 2018 payments unobserved",
-      "seconds": 8.0
+      "note": ""
     },
     {
-      "spec": "intensive ~ paid this year + paid next year",
+      "spec": "food only vs any non-food (speaker, consulting, travel)",
+      "round": 3,
+      "population": "physician",
       "absorb": [
         "physician_year",
         "drug_year",
         "physician_drug"
       ],
       "outcome": "log_rx",
-      "treatment": "pay_any",
+      "treatment": "pay_food_only",
       "controls": [
-        "pay_any_lead"
+        "pay_nonfood_any"
       ],
-      "coef": 0.025240791828645814,
-      "se": 0.0016594570158443573,
-      "ci_low": 0.021988256077590872,
-      "ci_high": 0.028493327579700755,
-      "t": 15.2102715452397,
-      "n_obs": 1746258,
-      "n_physicians": 89011,
+      "coef": 0.03883203015755489,
+      "se": 0.0016320378780958198,
+      "ci_low": 0.03563323591648708,
+      "ci_high": 0.0420308243986227,
+      "t": 23.793583885970932,
+      "n_obs": 1813546,
+      "n_clusters": 71869,
+      "pct": 3.9595848232992337,
       "extra": {
-        "pay_any_lead": 0.005046528298147915,
-        "pay_any_lead_se": 0.0017540834438812098
+        "pay_nonfood_any": 0.048056117505059275,
+        "pay_nonfood_any_se": 0.007256741117566603
       },
-      "note": "a large lead coefficient means targeting anticipates prescribing",
-      "seconds": 11.4
+      "note": "coef is food-only; non-food in extra"
     },
     {
-      "spec": "intensive ~ paid + peer share paid",
+      "spec": "payment >= $25",
+      "round": 3,
+      "population": "physician",
+      "absorb": [
+        "physician_year",
+        "drug_year",
+        "physician_drug"
+      ],
+      "outcome": "log_rx",
+      "treatment": "pay_ge25",
+      "controls": [],
+      "coef": 0.05221123324248878,
+      "se": 0.0019163386023439111,
+      "ci_low": 0.04845520958189472,
+      "ci_high": 0.055967256903082845,
+      "t": 27.245306846414408,
+      "n_obs": 1813546,
+      "n_clusters": 71869,
+      "pct": 5.359827398921002,
+      "extra": {},
+      "note": ""
+    },
+    {
+      "spec": "payment >= $100",
+      "round": 3,
+      "population": "physician",
+      "absorb": [
+        "physician_year",
+        "drug_year",
+        "physician_drug"
+      ],
+      "outcome": "log_rx",
+      "treatment": "pay_ge100",
+      "controls": [],
+      "coef": 0.04830327654786645,
+      "se": 0.002831011717012319,
+      "ci_low": 0.042754493582522306,
+      "ci_high": 0.0538520595132106,
+      "t": 17.06219591307197,
+      "n_obs": 1813546,
+      "n_clusters": 71869,
+      "pct": 4.948889243342691,
+      "extra": {},
+      "note": ""
+    },
+    {
+      "spec": "paid + same-city peer share paid",
+      "round": 1,
+      "population": "physician",
       "absorb": [
         "physician_year",
         "drug_year",
@@ -306,22 +512,52 @@
       "controls": [
         "peer_pay_share"
       ],
-      "coef": 0.03760926313315199,
-      "se": 0.0015268303380257166,
-      "ci_low": 0.034616675670621586,
-      "ci_high": 0.0406018505956824,
-      "t": 24.632247733420748,
-      "n_obs": 2199852,
-      "n_physicians": 89011,
+      "coef": 0.03860437703363527,
+      "se": 0.0016624876215276382,
+      "ci_low": 0.0353459012954411,
+      "ci_high": 0.04186285277182944,
+      "t": 23.220850810403153,
+      "n_obs": 1813546,
+      "n_clusters": 71869,
+      "pct": 3.9359207927502693,
       "extra": {
-        "peer_pay_share": 0.011630976644073218,
-        "peer_pay_share_se": 0.0038881323178998517
+        "peer_pay_share": 0.004385836265391205,
+        "peer_pay_share_se": 0.004067481461556036
       },
-      "note": "",
-      "seconds": 17.3
+      "note": ""
     },
     {
-      "spec": "intensive, GLP-1 only",
+      "spec": "paid + paid about another drug by same manufacturer",
+      "round": 3,
+      "population": "physician",
+      "absorb": [
+        "physician_year",
+        "drug_year",
+        "physician_drug"
+      ],
+      "outcome": "log_rx",
+      "treatment": "pay_any",
+      "controls": [
+        "pay_same_mfr_other"
+      ],
+      "coef": 0.04038719844998734,
+      "se": 0.0016582181720242164,
+      "ci_low": 0.03713709083281987,
+      "ci_high": 0.0436373060671548,
+      "t": 24.355780880561674,
+      "n_obs": 1813546,
+      "n_clusters": 71869,
+      "pct": 4.121385254150578,
+      "extra": {
+        "pay_same_mfr_other": -0.008441428013736926,
+        "pay_same_mfr_other_se": 0.001764912273184747
+      },
+      "note": ""
+    },
+    {
+      "spec": "class: GLP-1",
+      "round": 1,
+      "population": "physician",
       "absorb": [
         "physician_year",
         "drug_year",
@@ -330,19 +566,21 @@
       "outcome": "log_rx",
       "treatment": "pay_any",
       "controls": [],
-      "coef": 0.043778159185634394,
-      "se": 0.0032112900536637,
-      "ci_low": 0.03748403068045354,
-      "ci_high": 0.050072287690815245,
-      "t": 13.632577080880228,
-      "n_obs": 840274,
-      "n_physicians": 85264,
+      "coef": 0.04592858316100879,
+      "se": 0.003563607779817217,
+      "ci_low": 0.03894391191256705,
+      "ci_high": 0.052913254409450536,
+      "t": 12.8882262018646,
+      "n_obs": 679185,
+      "n_clusters": 68556,
+      "pct": 4.699963488248526,
       "extra": {},
-      "note": "",
-      "seconds": 2.8
+      "note": ""
     },
     {
-      "spec": "intensive, SGLT2 only",
+      "spec": "class: SGLT2",
+      "round": 1,
+      "population": "physician",
       "absorb": [
         "physician_year",
         "drug_year",
@@ -351,19 +589,21 @@
       "outcome": "log_rx",
       "treatment": "pay_any",
       "controls": [],
-      "coef": 0.036069758305744104,
-      "se": 0.003341922192922534,
-      "ci_low": 0.029519590807615938,
-      "ci_high": 0.04261992580387227,
-      "t": 10.793117320963374,
-      "n_obs": 645061,
-      "n_physicians": 85642,
+      "coef": 0.03602541831871694,
+      "se": 0.0036560197249031713,
+      "ci_low": 0.02885961965790672,
+      "ci_high": 0.04319121697952715,
+      "t": 9.85372646469271,
+      "n_obs": 533689,
+      "n_clusters": 69263,
+      "pct": 3.6682196874519457,
       "extra": {},
-      "note": "",
-      "seconds": 1.8
+      "note": ""
     },
     {
-      "spec": "intensive, DPP-4 only",
+      "spec": "class: DPP-4",
+      "round": 1,
+      "population": "physician",
       "absorb": [
         "physician_year",
         "drug_year",
@@ -372,19 +612,21 @@
       "outcome": "log_rx",
       "treatment": "pay_any",
       "controls": [],
-      "coef": 0.0004352672780834731,
-      "se": 0.0039011667183074285,
-      "ci_low": -0.007211019489799087,
-      "ci_high": 0.008081554045966033,
-      "t": 0.11157361618021785,
-      "n_obs": 714517,
-      "n_physicians": 84757,
+      "coef": -0.0029141707748840807,
+      "se": 0.004096080173759142,
+      "ci_low": -0.010942487915452,
+      "ci_high": 0.005114146365683837,
+      "t": -0.7114535485787686,
+      "n_obs": 600672,
+      "n_clusters": 68725,
+      "pct": -0.2909928700941311,
       "extra": {},
-      "note": "",
-      "seconds": 1.9
+      "note": ""
     },
     {
-      "spec": "intensive, GLP-1, 2019-2021",
+      "spec": "specialty: Family or general practice",
+      "round": 3,
+      "population": "physician",
       "absorb": [
         "physician_year",
         "drug_year",
@@ -393,19 +635,21 @@
       "outcome": "log_rx",
       "treatment": "pay_any",
       "controls": [],
-      "coef": 0.006947488649058773,
-      "se": 0.005431245381229845,
-      "ci_low": -0.0036977522981517233,
-      "ci_high": 0.017592729596269268,
-      "t": 1.2791704593331394,
-      "n_obs": 300677,
-      "n_physicians": 69809,
+      "coef": 0.03666498699820359,
+      "se": 0.0023815056778862245,
+      "ci_low": 0.03199723586954659,
+      "ci_high": 0.04133273812686059,
+      "t": 15.395716810025279,
+      "n_obs": 831242,
+      "n_clusters": 34791,
+      "pct": 3.7345438409870146,
       "extra": {},
-      "note": "",
-      "seconds": 0.4
+      "note": ""
     },
     {
-      "spec": "intensive, GLP-1, 2022-2024 (Mounjaro, shortages)",
+      "spec": "specialty: Internal medicine",
+      "round": 3,
+      "population": "physician",
       "absorb": [
         "physician_year",
         "drug_year",
@@ -414,45 +658,758 @@
       "outcome": "log_rx",
       "treatment": "pay_any",
       "controls": [],
-      "coef": 0.048712169924913125,
-      "se": 0.003850235879047104,
-      "ci_low": 0.0411657076019808,
-      "ci_high": 0.05625863224784545,
-      "t": 12.651736531261278,
-      "n_obs": 539597,
-      "n_physicians": 84549,
+      "coef": 0.04034626848330223,
+      "se": 0.002604374631214242,
+      "ci_low": 0.03524169420612232,
+      "ci_high": 0.04545084276048214,
+      "t": 15.491729953033493,
+      "n_obs": 721905,
+      "n_clusters": 28707,
+      "pct": 4.117123656535027,
       "extra": {},
-      "note": "",
-      "seconds": 1.0
+      "note": ""
+    },
+    {
+      "spec": "specialty: Endocrinology",
+      "round": 3,
+      "population": "physician",
+      "absorb": [
+        "physician_year",
+        "drug_year",
+        "physician_drug"
+      ],
+      "outcome": "log_rx",
+      "treatment": "pay_any",
+      "controls": [],
+      "coef": 0.03950468732539965,
+      "se": 0.0046244191310938635,
+      "ci_low": 0.030440825828455677,
+      "ci_high": 0.04856854882234362,
+      "t": 8.542626912810816,
+      "n_obs": 183802,
+      "n_clusters": 4448,
+      "pct": 4.029537507646452,
+      "extra": {},
+      "note": ""
+    },
+    {
+      "spec": "specialty: Cardiology",
+      "round": 3,
+      "population": "physician",
+      "absorb": [
+        "physician_year",
+        "drug_year",
+        "physician_drug"
+      ],
+      "outcome": "log_rx",
+      "treatment": "pay_any",
+      "controls": [],
+      "coef": 0.032040763965904544,
+      "se": 0.015044458098217191,
+      "ci_low": 0.0025536260933988475,
+      "ci_high": 0.06152790183841024,
+      "t": 2.129738655704818,
+      "n_obs": 21646,
+      "n_clusters": 1177,
+      "pct": 3.255959567137978,
+      "extra": {},
+      "note": ""
+    },
+    {
+      "spec": "specialty: Nephrology",
+      "round": 3,
+      "population": "physician",
+      "absorb": [
+        "physician_year",
+        "drug_year",
+        "physician_drug"
+      ],
+      "outcome": "log_rx",
+      "treatment": "pay_any",
+      "controls": [],
+      "coef": 0.03748807222378417,
+      "se": 0.021659517611711147,
+      "ci_low": -0.0049645822951696755,
+      "ci_high": 0.07994072674273801,
+      "t": 1.7307898031632356,
+      "n_obs": 13096,
+      "n_clusters": 710,
+      "pct": 3.8199613595313098,
+      "extra": {},
+      "note": ""
+    },
+    {
+      "spec": "specialty: Other",
+      "round": 3,
+      "population": "physician",
+      "absorb": [
+        "physician_year",
+        "drug_year",
+        "physician_drug"
+      ],
+      "outcome": "log_rx",
+      "treatment": "pay_any",
+      "controls": [],
+      "coef": 0.05113390485512049,
+      "se": 0.013380569829964122,
+      "ci_low": 0.02490798798839081,
+      "ci_high": 0.07735982172185017,
+      "t": 3.8215042785855404,
+      "n_obs": 41855,
+      "n_clusters": 2036,
+      "pct": 5.246381386253329,
+      "extra": {},
+      "note": ""
+    },
+    {
+      "spec": "GLP-1, 2019-2021",
+      "round": 1,
+      "population": "physician",
+      "absorb": [
+        "physician_year",
+        "drug_year",
+        "physician_drug"
+      ],
+      "outcome": "log_rx",
+      "treatment": "pay_any",
+      "controls": [],
+      "coef": 0.004604385078748468,
+      "se": 0.00582825225463347,
+      "ci_low": -0.006818989340333133,
+      "ci_high": 0.016027759497830068,
+      "t": 0.7900112894200786,
+      "n_obs": 243614,
+      "n_clusters": 55813,
+      "pct": 0.4615001547574771,
+      "extra": {},
+      "note": ""
+    },
+    {
+      "spec": "GLP-1, 2022-2024",
+      "round": 1,
+      "population": "physician",
+      "absorb": [
+        "physician_year",
+        "drug_year",
+        "physician_drug"
+      ],
+      "outcome": "log_rx",
+      "treatment": "pay_any",
+      "controls": [],
+      "coef": 0.052409130681624026,
+      "se": 0.004318269120249612,
+      "ci_low": 0.043945323205934785,
+      "ci_high": 0.06087293815731327,
+      "t": 12.1366059460867,
+      "n_obs": 435571,
+      "n_clusters": 67982,
+      "pct": 5.380679902211427,
+      "extra": {},
+      "note": ""
+    },
+    {
+      "spec": "GLP-1, 2022-2024, excluding Mounjaro",
+      "round": 3,
+      "population": "physician",
+      "absorb": [
+        "physician_year",
+        "drug_year",
+        "physician_drug"
+      ],
+      "outcome": "log_rx",
+      "treatment": "pay_any",
+      "controls": [],
+      "coef": 0.057256541850918524,
+      "se": 0.004833354219020145,
+      "ci_low": 0.047783167581639044,
+      "ci_high": 0.066729916120198,
+      "t": 11.846129883384798,
+      "n_obs": 372191,
+      "n_clusters": 67682,
+      "pct": 5.892743475660311,
+      "extra": {},
+      "note": ""
+    },
+    {
+      "spec": "all classes excluding Mounjaro (launch)",
+      "round": 3,
+      "population": "physician",
+      "absorb": [
+        "physician_year",
+        "drug_year",
+        "physician_drug"
+      ],
+      "outcome": "log_rx",
+      "treatment": "pay_any",
+      "controls": [],
+      "coef": 0.03899266552137464,
+      "se": 0.0016514330637602077,
+      "ci_low": 0.03575585671640463,
+      "ci_high": 0.04222947432634465,
+      "t": 23.611411432317354,
+      "n_obs": 1750166,
+      "n_clusters": 71869,
+      "pct": 3.9762857503737203,
+      "extra": {},
+      "note": ""
+    },
+    {
+      "spec": "non-physician practitioners, 2021-2024: intensive",
+      "round": 3,
+      "population": "npp",
+      "absorb": [
+        "physician_year",
+        "drug_year",
+        "physician_drug"
+      ],
+      "outcome": "log_rx",
+      "treatment": "pay_any",
+      "controls": [],
+      "coef": 0.03624381098760065,
+      "se": 0.003925300201874405,
+      "ci_low": 0.028550222591926813,
+      "ci_high": 0.043937399383274484,
+      "t": 9.233385759971567,
+      "n_obs": 283282,
+      "n_clusters": 16988,
+      "pct": 3.690862539054307,
+      "extra": {},
+      "note": ""
+    },
+    {
+      "spec": "non-physician practitioners, 2021-2024: extensive",
+      "round": 3,
+      "population": "npp",
+      "absorb": [
+        "physician_year",
+        "drug_year",
+        "physician_drug"
+      ],
+      "outcome": "any_rx",
+      "treatment": "pay_any",
+      "controls": [],
+      "coef": 0.027606333167765548,
+      "se": 0.0018836928119466488,
+      "ci_low": 0.023914295256350117,
+      "ci_high": 0.03129837107918098,
+      "t": 14.655432665391215,
+      "n_obs": 1002292,
+      "n_clusters": 16988,
+      "pct": null,
+      "extra": {},
+      "note": ""
+    },
+    {
+      "spec": "specialty: Nurse practitioner",
+      "round": 3,
+      "population": "npp",
+      "absorb": [
+        "physician_year",
+        "drug_year",
+        "physician_drug"
+      ],
+      "outcome": "log_rx",
+      "treatment": "pay_any",
+      "controls": [],
+      "coef": 0.030662710756184316,
+      "se": 0.004661120401025172,
+      "ci_low": 0.02152691477017498,
+      "ci_high": 0.03979850674219365,
+      "t": 6.578399208362077,
+      "n_obs": 196496,
+      "n_clusters": 11794,
+      "pct": 3.1137653587289815,
+      "extra": {},
+      "note": ""
+    },
+    {
+      "spec": "specialty: Physician assistant",
+      "round": 3,
+      "population": "npp",
+      "absorb": [
+        "physician_year",
+        "drug_year",
+        "physician_drug"
+      ],
+      "outcome": "log_rx",
+      "treatment": "pay_any",
+      "controls": [],
+      "coef": 0.04763540549335879,
+      "se": 0.0072419064176758256,
+      "ci_low": 0.033441268914714176,
+      "ci_high": 0.061829542072003404,
+      "t": 6.577743862733677,
+      "n_obs": 85641,
+      "n_clusters": 5136,
+      "pct": 4.8788203191220125,
+      "extra": {},
+      "note": ""
+    },
+    {
+      "spec": "physicians, unbalanced panel (all years present not required)",
+      "round": 3,
+      "population": "physician_unbalanced",
+      "absorb": [
+        "physician_year",
+        "drug_year",
+        "physician_drug"
+      ],
+      "outcome": "log_rx",
+      "treatment": "pay_any",
+      "controls": [],
+      "coef": 0.039304895338600786,
+      "se": 0.0014935439271650983,
+      "ci_low": 0.03637754924135719,
+      "ci_high": 0.04223224143584438,
+      "t": 26.31653118713794,
+      "n_obs": 2629753,
+      "n_clusters": 217388,
+      "pct": 4.008755315788859,
+      "extra": {},
+      "note": ""
     }
   ],
-  "event_study": {
-    "rel_periods": [
-      -3,
-      -2,
-      0,
-      1,
-      2,
-      3
-    ],
-    "coefs": [
-      -0.0019207475775839809,
-      -0.007287779049856178,
-      0.022646973109526625,
-      0.058636724206992584,
-      0.05913812087367634,
-      0.040930473254472584
-    ],
-    "ses": [
-      0.007486671467447216,
-      0.00411019024985893,
-      0.0031850950129473643,
-      0.004257707858112126,
-      0.005175185930107105,
-      0.006348002451681967
-    ],
-    "pretrend_chi2": 3.553582496822277,
-    "pretrend_df": 2,
-    "pretrend_p": 0.16918013427739537
+  "event_studies": {
+    "physician": {
+      "cohort (Sun-Abraham)": {
+        "rel_periods": [
+          -5,
+          -4,
+          -3,
+          -2,
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "coefs": [
+          -0.04939373880599641,
+          -0.003934593437549644,
+          -0.007654624248477423,
+          -0.004545696141847648,
+          0.019801326873604277,
+          0.06648497338599307,
+          0.07200362022849666,
+          0.05174575493789939,
+          0.029304173309272832
+        ],
+        "ses": [
+          0.026302175589730928,
+          0.014603839288289077,
+          0.00949668048021698,
+          0.005496415224670176,
+          0.00399549507581299,
+          0.005669456100992806,
+          0.007198535004954562,
+          0.008746419932903237,
+          0.011377003124453585
+        ],
+        "pretrend_chi2": 4.623960070338298,
+        "pretrend_df": 4,
+        "pretrend_p": 0.3281009883443821,
+        "round": 3,
+        "population": "physician",
+        "cohorts": [
+          {
+            "g": 2024,
+            "e": -5,
+            "n": 963,
+            "beta": -0.04939373880599641,
+            "se": 0.026302175589730928,
+            "identified": true,
+            "weight": 1.0
+          },
+          {
+            "g": 2023,
+            "e": -4,
+            "n": 1597,
+            "beta": 0.024175260918539384,
+            "se": 0.019928355878222007,
+            "identified": true,
+            "weight": 0.5443081117927744
+          },
+          {
+            "g": 2024,
+            "e": -4,
+            "n": 1337,
+            "beta": -0.037510836823244624,
+            "se": 0.020667480048039276,
+            "identified": true,
+            "weight": 0.4556918882072256
+          },
+          {
+            "g": 2022,
+            "e": -3,
+            "n": 2581,
+            "beta": -0.00658818785172747,
+            "se": 0.016084713353563665,
+            "identified": true,
+            "weight": 0.39017384731670446
+          },
+          {
+            "g": 2023,
+            "e": -3,
+            "n": 2085,
+            "beta": 0.015433712269526816,
+            "se": 0.016298006625531675,
+            "identified": true,
+            "weight": 0.31519274376417233
+          },
+          {
+            "g": 2024,
+            "e": -3,
+            "n": 1949,
+            "beta": -0.03376629894321855,
+            "se": 0.016254040222949646,
+            "identified": true,
+            "weight": 0.2946334089191232
+          },
+          {
+            "g": 2021,
+            "e": -2,
+            "n": 5543,
+            "beta": -0.0051296052094284925,
+            "se": 0.00976704003598424,
+            "identified": true,
+            "weight": 0.37924192665571976
+          },
+          {
+            "g": 2022,
+            "e": -2,
+            "n": 3434,
+            "beta": 0.008304496102130314,
+            "se": 0.011436909742141265,
+            "identified": true,
+            "weight": 0.2349480021893815
+          },
+          {
+            "g": 2023,
+            "e": -2,
+            "n": 2915,
+            "beta": 0.0010865499663685143,
+            "se": 0.011732305529436623,
+            "identified": true,
+            "weight": 0.19943897099069513
+          },
+          {
+            "g": 2024,
+            "e": -2,
+            "n": 2724,
+            "beta": -0.025584223898701478,
+            "se": 0.011657882980668272,
+            "identified": true,
+            "weight": 0.1863711001642036
+          },
+          {
+            "g": 2020,
+            "e": 0,
+            "n": 13312,
+            "beta": 0.0018337086756478134,
+            "se": 0.007612108583979153,
+            "identified": true,
+            "weight": 0.31096264804129975
+          },
+          {
+            "g": 2021,
+            "e": 0,
+            "n": 8819,
+            "beta": -0.008558328708722557,
+            "se": 0.008879610725194921,
+            "identified": true,
+            "weight": 0.2060080824125768
+          },
+          {
+            "g": 2022,
+            "e": 0,
+            "n": 6932,
+            "beta": 0.02627933398123782,
+            "se": 0.010073129506785097,
+            "identified": true,
+            "weight": 0.16192856642294845
+          },
+          {
+            "g": 2023,
+            "e": 0,
+            "n": 7651,
+            "beta": 0.06781452748536825,
+            "se": 0.010228234635285655,
+            "identified": true,
+            "weight": 0.17872410007241468
+          },
+          {
+            "g": 2024,
+            "e": 0,
+            "n": 6095,
+            "beta": 0.032440242850801146,
+            "se": 0.009251965490383261,
+            "identified": true,
+            "weight": 0.14237660305076036
+          },
+          {
+            "g": 2020,
+            "e": 1,
+            "n": 18245,
+            "beta": 0.03912126148343947,
+            "se": 0.009455609893763909,
+            "identified": true,
+            "weight": 0.316407401626693
+          },
+          {
+            "g": 2021,
+            "e": 1,
+            "n": 11340,
+            "beta": 0.05215436221042904,
+            "se": 0.010528529677601818,
+            "identified": true,
+            "weight": 0.19665990323084126
+          },
+          {
+            "g": 2022,
+            "e": 1,
+            "n": 17875,
+            "beta": 0.085379127375512,
+            "se": 0.011904443049210938,
+            "identified": true,
+            "weight": 0.3099908086641347
+          },
+          {
+            "g": 2023,
+            "e": 1,
+            "n": 10203,
+            "beta": 0.09824299081521347,
+            "se": 0.011844856898291116,
+            "identified": true,
+            "weight": 0.17694188647833098
+          },
+          {
+            "g": 2020,
+            "e": 2,
+            "n": 22252,
+            "beta": 0.059573756849263165,
+            "se": 0.010340786562743981,
+            "identified": true,
+            "weight": 0.3748525993059533
+          },
+          {
+            "g": 2021,
+            "e": 2,
+            "n": 13395,
+            "beta": 0.06698251586186275,
+            "se": 0.011398434072368438,
+            "identified": true,
+            "weight": 0.22564940534348574
+          },
+          {
+            "g": 2022,
+            "e": 2,
+            "n": 23715,
+            "beta": 0.08650275634090505,
+            "se": 0.012561164127022444,
+            "identified": true,
+            "weight": 0.39949799535056096
+          },
+          {
+            "g": 2020,
+            "e": 3,
+            "n": 26224,
+            "beta": 0.05462587327755014,
+            "se": 0.010875218756224006,
+            "identified": true,
+            "weight": 0.6560428289095139
+          },
+          {
+            "g": 2021,
+            "e": 3,
+            "n": 13749,
+            "beta": 0.04625239372333823,
+            "se": 0.012061545331056644,
+            "identified": true,
+            "weight": 0.34395717109048607
+          },
+          {
+            "g": 2020,
+            "e": 4,
+            "n": 26946,
+            "beta": 0.029304173309272832,
+            "se": 0.011377003124453585,
+            "identified": true,
+            "weight": 1.0
+          }
+        ]
+      },
+      "pooled dummies": {
+        "rel_periods": [
+          -3,
+          -2,
+          0,
+          1,
+          2,
+          3
+        ],
+        "coefs": [
+          -0.02094642002452137,
+          -0.009426313128506425,
+          0.02080570448056514,
+          0.06555160787776006,
+          0.07643367431359893,
+          0.05959118319062611
+        ],
+        "ses": [
+          0.009143073696563937,
+          0.005480278308580171,
+          0.003966219396309962,
+          0.0052684376675423234,
+          0.006374375740109229,
+          0.00775094568180185
+        ],
+        "pretrend_chi2": 5.776927183063674,
+        "pretrend_df": 2,
+        "pretrend_p": 0.05566166600401598,
+        "round": 3,
+        "population": "physician"
+      }
+    },
+    "npp": {
+      "cohort (Sun-Abraham)": {
+        "rel_periods": [
+          -3,
+          -2,
+          0,
+          1,
+          2
+        ],
+        "coefs": [
+          0.0063682179905511956,
+          -0.007949880480807935,
+          0.0429999286049583,
+          0.06818563923241604,
+          0.07754812412915912
+        ],
+        "ses": [
+          0.028664108670813426,
+          0.013343842738884228,
+          0.008966106823957659,
+          0.013634571695078881,
+          0.018358198517565885
+        ],
+        "pretrend_chi2": 0.6134177606988874,
+        "pretrend_df": 2,
+        "pretrend_p": 0.73586479442958,
+        "round": 3,
+        "population": "npp",
+        "cohorts": [
+          {
+            "g": 2024,
+            "e": -3,
+            "n": 673,
+            "beta": 0.0063682179905511956,
+            "se": 0.028664108670813426,
+            "identified": true,
+            "weight": 1.0
+          },
+          {
+            "g": 2023,
+            "e": -2,
+            "n": 1215,
+            "beta": -0.012972557922001582,
+            "se": 0.018226818350102893,
+            "identified": true,
+            "weight": 0.5661696178937559
+          },
+          {
+            "g": 2024,
+            "e": -2,
+            "n": 931,
+            "beta": -0.0013950436483156864,
+            "se": 0.01991297516186068,
+            "identified": true,
+            "weight": 0.4338303821062442
+          },
+          {
+            "g": 2022,
+            "e": 0,
+            "n": 3754,
+            "beta": 0.042095122060270156,
+            "se": 0.014195803868719136,
+            "identified": true,
+            "weight": 0.43570102135561745
+          },
+          {
+            "g": 2023,
+            "e": 0,
+            "n": 2839,
+            "beta": 0.03276779862039367,
+            "se": 0.016698469507042565,
+            "identified": true,
+            "weight": 0.3295032497678737
+          },
+          {
+            "g": 2024,
+            "e": 0,
+            "n": 2023,
+            "beta": 0.05903831752979186,
+            "se": 0.01657426052876267,
+            "identified": true,
+            "weight": 0.23479572887650882
+          },
+          {
+            "g": 2022,
+            "e": 1,
+            "n": 7318,
+            "beta": 0.07963142183118692,
+            "se": 0.017275882096706895,
+            "identified": true,
+            "weight": 0.668249474933796
+          },
+          {
+            "g": 2023,
+            "e": 1,
+            "n": 3633,
+            "beta": 0.045130247804448714,
+            "se": 0.01974485771209487,
+            "identified": true,
+            "weight": 0.331750525066204
+          },
+          {
+            "g": 2022,
+            "e": 2,
+            "n": 9036,
+            "beta": 0.07754812412915912,
+            "se": 0.018358198517565885,
+            "identified": true,
+            "weight": 1.0
+          }
+        ]
+      },
+      "pooled dummies": {
+        "rel_periods": [
+          -3,
+          -2,
+          0,
+          1,
+          2
+        ],
+        "coefs": [
+          0.0013485282689162847,
+          -0.004062910378302319,
+          0.04438186724648755,
+          0.06894043515232944,
+          0.0734894288984173
+        ],
+        "ses": [
+          0.026678836395409848,
+          0.013352352824547532,
+          0.008857984921507397,
+          0.012421122337532519,
+          0.016200024594823958
+        ],
+        "pretrend_chi2": 0.12846874903305955,
+        "pretrend_df": 2,
+        "pretrend_p": 0.9377851808234199,
+        "round": 3,
+        "population": "npp"
+      }
+    }
   }
 }

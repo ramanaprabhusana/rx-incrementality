@@ -108,13 +108,13 @@ and persistent supply constraints, is not something either paper can speak to.
 That third point is the only part of this project that could produce a result
 the literature does not already have.
 
-**Update, after estimation.** It did. On 2019 to 2024 data the effect is +3.9%
-(conservatively +2.6%), in line with Carey et al., so published magnitudes
+**Update, after estimation.** It did. On 2019 to 2024 data the effect among
+physicians is +4.0% (conservatively +2.5%), in line with Carey et al., so published magnitudes
 roughly hold into the GLP-1 era. A fourth point also emerged: on annual public
 data, the published physician-by-drug specification fails a falsification test
 (next year's payment predicts this year's prescribing, t = 16), and adding
 physician-by-year effects removes most of the failure and lowers the estimate by
-about 40%. That is a statement about annual data, not a criticism of the
+about 45%. That is a statement about annual data, not a criticism of the
 original monthly analysis, whose pre-trends are flat. See
 [results.md](results.md).
 

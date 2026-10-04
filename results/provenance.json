@@ -1,0 +1,138 @@
+{
+  "generated": "2026-10-04",
+  "estimates_sha256": "368504f769d1084ccda130ebcb4c5fbae1b61959f04b5277aff015ae5ff0b1cd",
+  "environment": {
+    "python": "3.14.6",
+    "numpy": "2.4.6",
+    "pandas": "3.0.3",
+    "scipy": "1.18.0",
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+  },
+  "files": [
+    {
+      "dataset": "Medicare Part D Prescribers by Provider and Drug",
+      "year": 2019,
+      "file": "data/raw/diabetes_dy2019.csv",
+      "rows": 412793,
+      "bytes": 65111340,
+      "modified": "2026-10-04T01:12:11",
+      "sha256": "f6d5a4d7c8883f7861f9acface4133d541d9dac21f74515e6109212a78eb2d82",
+      "source": "https://data.cms.gov/data-api/v1/dataset/2a6705e6-7a1e-460c-ba22-35249a531918/data"
+    },
+    {
+      "dataset": "Open Payments general payments (diabetes brand families)",
+      "year": 2019,
+      "file": "data/raw/openpayments_diabetes_2019.csv",
+      "rows": 948818,
+      "bytes": 187210049,
+      "modified": "2026-10-04T00:58:53",
+      "sha256": "9e29cf1ec4f2b4d1dd23c14428415e31ee9d284ae0c830be5fa4919678b3b69a",
+      "source": "https://download.cms.gov/openpayments/PGYR2019_P06302026_06032026/OP_DTL_GNRL_PGYR2019_P06302026_06032026.csv"
+    },
+    {
+      "dataset": "Medicare Part D Prescribers by Provider and Drug",
+      "year": 2020,
+      "file": "data/raw/diabetes_dy2020.csv",
+      "rows": 462462,
+      "bytes": 72889984,
+      "modified": "2026-10-04T01:12:13",
+      "sha256": "96ca6b587c766cb015b6fd8172c855b67dec0ded5493d0170a1ea972bd337ae1",
+      "source": "https://data.cms.gov/data-api/v1/dataset/7795fe20-e80e-435a-a9ed-d2d65e05feeb/data"
+    },
+    {
+      "dataset": "Open Payments general payments (diabetes brand families)",
+      "year": 2020,
+      "file": "data/raw/openpayments_diabetes_2020.csv",
+      "rows": 605241,
+      "bytes": 118686177,
+      "modified": "2026-10-04T01:00:16",
+      "sha256": "8c1f5ff3ef7369ad73da3a2ee20d9cb0eb24453a757b07fbfabb836b0ca5604c",
+      "source": "https://download.cms.gov/openpayments/PGYR2020_P06302026_06032026/OP_DTL_GNRL_PGYR2020_P06302026_06032026.csv"
+    },
+    {
+      "dataset": "Medicare Part D Prescribers by Provider and Drug",
+      "year": 2021,
+      "file": "data/raw/diabetes_dy2021.csv",
+      "rows": 519244,
+      "bytes": 81651361,
+      "modified": "2026-10-04T01:12:19",
+      "sha256": "724185377a2369e1b20b7a67ca7873dfb1d103379f78720b7992e0c20364a253",
+      "source": "https://data.cms.gov/data-api/v1/dataset/f68114ed-f854-4ffc-9c6e-ed78b5e2f8d0/data"
+    },
+    {
+      "dataset": "Open Payments general payments (diabetes brand families)",
+      "year": 2021,
+      "file": "data/raw/openpayments_diabetes_2021.csv",
+      "rows": 971046,
+      "bytes": 191355384,
+      "modified": "2026-10-04T01:03:50",
+      "sha256": "ec997b95a5ea64e07a7d205f103dc875e93043d3eaab25d176799011bbe15274",
+      "source": "https://download.cms.gov/openpayments/PGYR2021_P06302026_06032026/OP_DTL_GNRL_PGYR2021_P06302026_06032026.csv"
+    },
+    {
+      "dataset": "Medicare Part D Prescribers by Provider and Drug",
+      "year": 2022,
+      "file": "data/raw/diabetes_dy2022.csv",
+      "rows": 613524,
+      "bytes": 96366051,
+      "modified": "2026-10-04T01:12:22",
+      "sha256": "7e539a35e351667dd0fc5598804b725ea5731cfdd20e8436e5913f2c9e0ded6c",
+      "source": "https://data.cms.gov/data-api/v1/dataset/b101b457-ffa4-49bb-8fd9-27c1266086e2/data"
+    },
+    {
+      "dataset": "Open Payments general payments (diabetes brand families)",
+      "year": 2022,
+      "file": "data/raw/openpayments_diabetes_2022.csv",
+      "rows": 1029755,
+      "bytes": 195295443,
+      "modified": "2026-10-04T01:06:35",
+      "sha256": "d9bba0373212e4f70eebb566ebde6421d6ec8d7ab54a54bb0d387e73e25224c7",
+      "source": "https://download.cms.gov/openpayments/PGYR2022_P06302026_06032026/OP_DTL_GNRL_PGYR2022_P06302026_06032026.csv"
+    },
+    {
+      "dataset": "Medicare Part D Prescribers by Provider and Drug",
+      "year": 2023,
+      "file": "data/raw/diabetes_dy2023.csv",
+      "rows": 789268,
+      "bytes": 123654220,
+      "modified": "2026-10-04T01:12:26",
+      "sha256": "ef6561a76dcf0f8b273bf6593c58d8eafc43a42e29bb38356263018b6c3502dd",
+      "source": "https://data.cms.gov/data-api/v1/dataset/e54db557-cd82-4e91-a0fe-61aad5865d69/data"
+    },
+    {
+      "dataset": "Open Payments general payments (diabetes brand families)",
+      "year": 2023,
+      "file": "data/raw/openpayments_diabetes_2023.csv",
+      "rows": 999017,
+      "bytes": 185163594,
+      "modified": "2026-10-04T01:10:10",
+      "sha256": "f324ea410a3707d66b4e3c422fbe98373d603405e69ef74dd28dab67f5ffab79",
+      "source": "https://download.cms.gov/openpayments/PGYR2023_P06302026_06032026/OP_DTL_GNRL_PGYR2023_P06302026_06032026.csv"
+    },
+    {
+      "dataset": "Medicare Part D Prescribers by Provider and Drug",
+      "year": 2024,
+      "file": "data/raw/diabetes_dy2024.csv",
+      "rows": 917755,
+      "bytes": 144184984,
+      "modified": "2026-10-04T01:12:36",
+      "sha256": "e9060c229e4e102b71c18f5863994abd460ed792d56c338a5dda4d68d2536b8a",
+      "source": "https://data.cms.gov/data-api/v1/dataset/9552739e-3d05-4c1b-8eff-ecabf391e2e5/data"
+    },
+    {
+      "dataset": "Open Payments general payments (diabetes brand families)",
+      "year": 2024,
+      "file": "data/raw/openpayments_diabetes_2024.csv",
+      "rows": 937276,
+      "bytes": 174168844,
+      "modified": "2026-10-04T01:12:39",
+      "sha256": "b7d6c38724298a005029ba85fa58104e5114d0335fca0b8d2b1a9dd7a2d323be",
+      "source": "https://download.cms.gov/openpayments/PGYR2024_P06302026_06032026/OP_DTL_GNRL_PGYR2024_P06302026_06032026.csv"
+    }
+  ],
+  "notes": [
+    "Part D extracts were fetched through the data.cms.gov JSON API, filtered by Brnd_Name.",
+    "Open Payments extracts were streamed from the bulk CSV and filtered by brand family in flight.",
+    "Row counts exclude the header."
+  ]
+}

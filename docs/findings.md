@@ -118,6 +118,28 @@ The `affinity` regime was added after real data exposed the gap: the 2-way
 version reported +23% with a large future-payment coefficient. The last row
 remains unsolved by any design here.
 
+## Event studies when effects build over time
+
+Simulated with affinity targeting, an effect of 0.03 in the onset year growing by
+0.02 a year, and later cohorts responding less (0.008 per year of later onset),
+12 replications, 1,200 physicians:
+
+| Years from onset | Truth | Cohort estimator | Pooled dummies |
+| ---: | ---: | ---: | ---: |
+| -3 | 0.000 | 0.001 | 0.007 |
+| -2 | 0.000 | 0.002 | 0.002 |
+| 0 | 0.015 | 0.015 | 0.015 |
+| +1 | 0.037 | 0.036 | 0.035 |
+| +2 | 0.060 | 0.059 | 0.058 |
+| +3 | 0.083 | 0.083 | 0.081 |
+| +4 | 0.107 | 0.109 | 0.113 |
+
+Mean absolute error 0.0012 for the cohort estimator against 0.0032 for pooled
+dummies, which also show a lead at -3 where the truth is zero. With many
+never-treated pairs to anchor on, the pooled bias here is modest rather than
+severe. A test with 40 fresh replications put every cohort-estimator error within
+one Monte Carlo standard error of zero.
+
 ## Limitations
 
 - The simulation's dynamic-targeting parameters are chosen to make the problem
