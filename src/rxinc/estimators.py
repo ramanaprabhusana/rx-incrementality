@@ -132,6 +132,7 @@ class EventStudyResult:
         n_obs: Observations used.
         n_clusters: Physicians used.
         true_effect: Ground truth when known.
+        detail: Optional per-cohort estimates behind an aggregated result.
     """
 
     rel_periods: np.ndarray
@@ -141,6 +142,7 @@ class EventStudyResult:
     n_obs: int
     n_clusters: int
     true_effect: float | None = None
+    detail: pd.DataFrame | None = None
 
     def to_frame(self) -> pd.DataFrame:
         """Return coefficients as a tidy DataFrame with 95% bounds."""
@@ -767,11 +769,18 @@ def drug_event_study(
     rel_clipped = np.clip(rel, -leads, lags)
 
     rel_grid = [r for r in range(-leads, lags + 1) if r != -1]
-    columns = []
+    columns, kept = [], []
     for r in rel_grid:
+        indicator = (is_treated_pair & (rel_clipped == r)).astype(float)
+        # A relative period nobody reaches has an all-zero dummy. Dropping it
+        # avoids reporting a solver artifact (0.0000, se 0.0000) as an estimate.
+        if not indicator.any():
+            continue
         name = f"_rel_{r}"
-        work[name] = (is_treated_pair & (rel_clipped == r)).astype(float)
+        work[name] = indicator
         columns.append(name)
+        kept.append(r)
+    rel_grid = kept
 
     demeaned = _absorb(work, [outcome, *columns], factors)
     y, X = demeaned[:, 0], demeaned[:, 1:]
@@ -789,4 +798,95 @@ def drug_event_study(
         n_obs=len(work),
         n_clusters=int(work[cluster_on].nunique()),
         true_effect=_true_effect(frame),
+    )
+
+
+def cohort_event_study(
+    frame: pd.DataFrame,
+    outcome: str = "log_rx",
+    cohort_col: str = "first_treat_period",
+    time_col: str = "period",
+    absorb: Sequence[str] = ("physician_year", "drug_year", "physician_drug"),
+    cluster_on: str = "physician_id",
+    never_treated: int = -1,
+    reference: int = -1,
+) -> EventStudyResult:
+    """Heterogeneity-robust event study (Sun and Abraham, 2021).
+
+    Pooled relative-time dummies, as in :func:`drug_event_study`, average across
+    onset cohorts with weights that can be negative when effects differ by
+    cohort or build over time, so even the pre-period coefficients can be
+    contaminated by post-period effects of other cohorts. This estimator
+    instead fits a separate coefficient for every (cohort, relative period)
+    cell against never-treated pairs, then aggregates each relative period
+    across cohorts with weights equal to each cohort's share of that period's
+    treated observations. Standard errors use the delta method with the
+    weights treated as fixed.
+
+    Pairs whose onset is unknown (left-censored) must be removed before calling:
+    they would otherwise enter as never treated.
+
+    Args:
+        frame: Physician-drug-period panel.
+        outcome: Outcome column.
+        cohort_col: Onset period of each pair, ``never_treated`` if never.
+        time_col: Period column on the same scale as ``cohort_col``.
+        absorb: Fixed effects to absorb.
+        cluster_on: Clustering column.
+        never_treated: Value of ``cohort_col`` marking never-treated pairs.
+        reference: Omitted relative period.
+
+    Returns:
+        Aggregated relative-period coefficients with their covariance, and the
+        per-cohort estimates in ``detail``.
+
+    Raises:
+        ValueError: If there are no never-treated pairs to compare against.
+    """
+    work = frame.copy()
+    cohort = work[cohort_col].to_numpy()
+    if not (cohort == never_treated).any():
+        raise ValueError("cohort_event_study needs never-treated pairs as the comparison group.")
+    rel = np.where(cohort == never_treated, np.nan, work[time_col].to_numpy() - cohort)
+
+    cells = (pd.DataFrame({"g": cohort, "e": rel})
+             .dropna().query("e != @reference").astype(int)
+             .value_counts().rename("n").reset_index().sort_values(["e", "g"]))
+    columns = []
+    for g, ev in zip(cells["g"], cells["e"]):
+        name = f"_g{g}_e{ev}"
+        work[name] = ((cohort == g) & (rel == ev)).astype(float)
+        columns.append(name)
+
+    demeaned = _absorb(work, [outcome, *columns], list(absorb))
+    y, X = demeaned[:, 0], demeaned[:, 1:]
+    keep = np.abs(X).max(axis=0) > 1e-10  # cells absorbed entirely by the fixed effects
+    beta = np.full(len(columns), np.nan)
+    vcov_full = np.full((len(columns), len(columns)), np.nan)
+    b, v, _ = _ols(y, X[:, keep], cluster=work[cluster_on].to_numpy(),
+                   absorbed=_absorbed_dof(work, list(absorb), cluster_on))
+    beta[keep] = b
+    idx = np.flatnonzero(keep)
+    vcov_full[np.ix_(idx, idx)] = v
+    cells = cells.assign(beta=beta, se=np.sqrt(np.diag(vcov_full)), identified=keep)
+
+    rel_periods = np.array(sorted(cells.loc[cells.identified, "e"].unique()))
+    W = np.zeros((len(rel_periods), len(columns)))
+    for i, ev in enumerate(rel_periods):
+        m = (cells["e"].to_numpy() == ev) & keep
+        W[i, m] = cells["n"].to_numpy()[m] / cells["n"].to_numpy()[m].sum()
+    b_k = np.nan_to_num(beta)
+    v_k = np.nan_to_num(vcov_full)
+    theta = W @ b_k
+    vcov = W @ v_k @ W.T
+    cells["weight"] = W.sum(axis=0)
+    return EventStudyResult(
+        rel_periods=rel_periods,
+        coefs=theta,
+        ses=np.sqrt(np.diag(vcov)),
+        vcov=vcov,
+        n_obs=len(work),
+        n_clusters=int(work[cluster_on].nunique()),
+        true_effect=_true_effect(frame),
+        detail=cells.reset_index(drop=True),
     )
