@@ -73,6 +73,40 @@ prefix `80840` plus the first nine digits), which rejects transcription errors
 and placeholders like `0000000000` that would otherwise produce confident
 wrong joins.
 
+## Joining the two sources: brand families
+
+Open Payments reports what a payment was about at the brand level (`VICTOZA`,
+`JANUMET`). Part D splits brands across pack sizes, devices and formulations
+(`Victoza 2-Pak`, `Victoza 3-Pak`, `Janumet Xr`, `Bydureon Pen`). Joining raw
+strings drops prescribing silently. The first version of this pipeline did
+exactly that and lost Victoza entirely: 1.58M claims in 2019, more than Ozempic
+that year.
+
+`rxinc.crosswalk.brand_family` normalises both sides to a family, and
+`crosswalk_report` lists every raw name against its family. Discovery was done
+systematically, not by guessing names:
+
+- Part D brands found by generic molecule in the national Geography and Drug
+  file, using short stems, because CMS abbreviates triple-combination generics
+  (`Empaglifloz/Linaglip/Metformin` for Trijardy Xr).
+- Open Payments names found by streaming one full unfiltered year.
+
+Result: 28 of 29 families match on both sides. Kombiglyze has prescribing but no
+payments in 2019 to 2024, which is genuine; it was not promoted before
+discontinuation. Insulin combinations, obesity indications and unbranded
+generics are excluded by design and reported as such.
+
+Open Payments extracts are filtered by family during streaming. Exact-name
+filtering had missed XIGDUO (listed as XIGDUO XR), TRIJARDY XR, STEGLUJAN and
+SEGLUROMET, about 1% of records.
+
+## The CMS catalog changes shape
+
+Between two runs on the same day, data.cms.gov moved from one catalog record per
+dataset holding every year, to one record per year titled
+`<dataset> : YYYY-MM-DD`. The API endpoints did not change. `part_d_distributions`
+handles both layouts and `tests/test_datasets.py` covers each.
+
 ## A note on the network client
 
 The Open Payments portal answers HTTP 403 to some custom `User-Agent` strings.

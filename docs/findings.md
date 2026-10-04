@@ -102,6 +102,22 @@ test and the placebo alongside any estimate.** They cost nothing, they are
 computable on the same data, and they distinguish the regime where the estimate
 means something from the regime where it does not.
 
+## The drug-level design under four regimes
+
+The design applied to CMS data compares drugs within a physician-year. Validated
+on `rxinc.drugpanel`, true effect 0.050, 30 replications:
+
+| Targeting | Physician-year + drug-year | + physician-drug |
+| --- | --- | --- |
+| Random | 0.048, coverage 93% | 0.048, coverage 97% |
+| Physician momentum | 0.047, coverage 87% | 0.048, coverage 100% |
+| Physician already favours the drug (`affinity`) | 0.686, coverage 0% | 0.046, coverage 97% |
+| Physician's use of that drug rising | 0.091, coverage 37% | 0.097, coverage 0% |
+
+The `affinity` regime was added after real data exposed the gap: the 2-way
+version reported +23% with a large future-payment coefficient. The last row
+remains unsolved by any design here.
+
 ## Limitations
 
 - The simulation's dynamic-targeting parameters are chosen to make the problem
