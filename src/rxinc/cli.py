@@ -27,9 +27,9 @@ from rxinc.simulate import VALID_TARGETING, PanelConfig, simulate_panel
 
 
 def _cmd_demo(_: argparse.Namespace) -> int:
-    from examples import bias_demo  # noqa: PLC0415  (optional example module)
+    from rxinc.demo import main as run_demo  # noqa: PLC0415
 
-    bias_demo.main()
+    run_demo()
     return 0
 
 
