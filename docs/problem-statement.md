@@ -98,6 +98,21 @@ prescriber panels or patient-level data.
 3. An end-to-end reproducible pipeline over public data.
 4. An honest statement of what remains unresolved.
 
+**Status.**
+
+1. **Met.** Single-outcome designs under three regimes ([findings.md](findings.md))
+   and the drug-level design under four ([findings.md](findings.md)), each
+   replicated with interval coverage.
+2. **Partly met, and it earned its keep.** The pre-trend test and the
+   next-year-payment falsification test separate the regimes in simulation. On
+   the real data the pre-trend test passes for how much physicians prescribe and
+   fails for whether they adopt a drug at all, catching exactly the targeting the
+   design cannot absorb. No diagnostic here can certify that such targeting is
+   absent; it can only fail to detect it.
+3. **Met.** `make data`, `make estimate`, `make figures`, with input hashes in
+   `results/provenance.json` and CI on three Python versions.
+4. **Met.** [results.md](results.md) closes with what the numbers do not support.
+
 ## Key risk
 
 The project can characterise and detect the problem. If the deliverable is read

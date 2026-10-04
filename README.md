@@ -11,16 +11,23 @@ simulated ground truth.**
 
 ## Results
 
-Among 71,869 physicians, a payment relationship about a diabetes drug is
-associated with **+4.0%** more Medicare claims for that drug (95% CI 3.6 to
-4.3%) and a **+2.5 point** higher chance of prescribing it at all. Controlling
-for anticipatory targeting gives **+2.5%**, so the honest range is about 2.5 to
-4.0%. The effect builds from +2.0% in the year of first payment to +7.5% two
-years later, with no trend beforehand.
+Among 71,869 physicians already prescribing a diabetes drug, a payment
+relationship about it is associated with **+4.0%** more Medicare claims for that
+drug (95% CI 3.6 to 4.3%). Controlling for anticipatory targeting gives
+**+2.5%**, so the honest range is about 2.5 to 4.0%. The effect builds from
++2.0% in the year of first payment to +7.5% two years later, with no trend
+beforehand, and holds (+4.1%) on pairs whose observation cannot depend on
+treatment.
+
+**Whether physicians adopt a drug at all is a different story.** Adoption was
+already rising before the first payment: representatives target physicians who
+are starting to prescribe. That margin fails its pre-trend test, so its +2.5
+point estimate is not credible as causal. Net of the pre-existing trend, adoption
+still rises about 3.4 points, a sensitivity bound rather than an estimate.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/figures/event-study-dark.png">
-  <img alt="Event study: estimates near zero in the years before the first payment, rising to about 7.5 percent two years after" src="docs/figures/event-study-light.png" width="760">
+  <img alt="Left: claims flat before the first payment, rising to about 7.5 percent two years after. Right: the probability of prescribing at all was already rising before the first payment; net of that trend it still rises about 5 points" src="docs/figures/event-study-light.png" width="760">
 </picture>
 
 That is in line with Carey, Lieber and Miller's +2.2% to +5.2% for 2013 to 2015,
@@ -62,7 +69,9 @@ under four targeting regimes, 30 replications each:
 The 3-way design survives the realistic forms of targeting and is three times
 more precise. **The last row is a real limitation**: no design here survives
 targeting on a physician's rising use of one specific drug. The event-study
-pre-trend test is how to detect it, and on the real data it passes.
+pre-trend test is how to detect it. On the real data it passes for how much
+physicians prescribe and fails for whether they adopt, which is exactly the case
+it exists to catch.
 
 The event study uses a cohort estimator (Sun and Abraham, 2021) rather than pooled
 relative-time dummies, which can be contaminated when effects build over time.
@@ -118,10 +127,10 @@ Sources, row counts and SHA-256 hashes of every input file:
 
 ```bash
 make install    # pip install -e ".[dev]"
-make test       # 144 tests, no network needed
+make test       # 148 tests, no network needed
 make demo       # simulation tables
 make data       # download CMS extracts, about 1.5 GB and 45 minutes
-make estimate   # results/estimates.json, about 10 minutes
+make estimate   # results/estimates.json, about 8 minutes
 make figures    # docs/figures/
 make provenance # results/provenance.json
 ```
@@ -154,9 +163,11 @@ docs/             results, problem, approach, related work, methods, data, simul
 
 ## Limitations
 
-- **Not proof of causation.** Pre-trends pass and the falsification test nearly
-  passes, but a small residual next-year coefficient (+0.006, SE 0.002) shows some
-  anticipatory targeting remains.
+- **No causal claim about adoption.** Whether physicians start prescribing a
+  drug fails its pre-trend test; reps target early adopters.
+- **Not proof of causation for claims either.** Pre-trends pass and the
+  falsification test nearly passes, but a small residual next-year coefficient
+  (+0.006, SE 0.002) shows some anticipatory targeting remains.
 - **Medicare only**, which matters for GLP-1 agents given commercial and cash-pay
   use.
 - **Suppression** below 11 claims; the intensive margin is conditional on it.
