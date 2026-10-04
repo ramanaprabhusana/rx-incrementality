@@ -139,3 +139,42 @@ def test_diagnose_returns_full_battery():
     out = diagnose(df)
     assert set(out) == {"event_study", "pretrend", "placebo", "balance"}
     assert out["pretrend"].df > 0
+
+
+def _synthetic_es(effect_by_e, slope, noise_sd=0.0, seed=0):
+    from rxinc.estimators import EventStudyResult
+    rel = np.array([r for r in range(-5, 5) if r != -1])
+    rng = np.random.default_rng(seed)
+    coefs = slope * (rel + 1) + np.array([effect_by_e.get(int(r), 0.0) for r in rel])
+    coefs = coefs + rng.normal(0, noise_sd, len(rel))
+    ses = np.full(len(rel), max(noise_sd, 1e-3))
+    return EventStudyResult(rel_periods=rel, coefs=coefs, ses=ses, vcov=np.diag(ses**2),
+                            n_obs=1, n_clusters=1)
+
+
+def test_detrend_removes_a_pure_linear_pretrend():
+    from rxinc.diagnostics import detrend_event_study
+    effects = {0: 0.02, 1: 0.05, 2: 0.06, 3: 0.04, 4: 0.03}
+    res = detrend_event_study(_synthetic_es(effects, slope=0.012))
+    assert res.slope == pytest.approx(0.012, abs=1e-9)
+    post = res.rel_periods >= 0
+    assert np.allclose(res.coefs[post], [effects[int(e)] for e in res.rel_periods[post]], atol=1e-9)
+    assert np.allclose(res.coefs[~post], 0.0, atol=1e-9)
+
+
+def test_detrend_leaves_flat_pretrends_alone():
+    from rxinc.diagnostics import detrend_event_study
+    es = _synthetic_es({1: 0.05}, slope=0.0)
+    res = detrend_event_study(es)
+    assert res.slope == pytest.approx(0.0, abs=1e-12)
+    assert np.allclose(res.coefs, es.coefs)
+
+
+def test_detrend_inflates_post_uncertainty_for_slope_estimation():
+    from rxinc.diagnostics import detrend_event_study
+    es = _synthetic_es({1: 0.05}, slope=0.01, noise_sd=0.01, seed=3)
+    res = detrend_event_study(es)
+    far_post = res.rel_periods == 4
+    assert res.ses[far_post][0] > es.ses[far_post][0]
+    mean, se = res.post_average()
+    assert np.isfinite(mean) and se > 0

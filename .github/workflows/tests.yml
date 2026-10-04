@@ -23,3 +23,5 @@ jobs:
         run: python -m pytest -q
       - name: CLI smoke test
         run: rxinc --help
+      - name: Lint
+        run: python -m ruff check src tests scripts examples

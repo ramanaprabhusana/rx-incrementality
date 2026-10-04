@@ -65,7 +65,7 @@ def test_report_flags_one_sided_families():
         part_d_names=["Jardiance", "Victoza 3-Pak", "Tradjenta", "Soliqua 100-33"],
         payment_names=["JARDIANCE", "VICTOZA", "OZEMPIC", "WIDGETMAB"],
     )
-    status = dict(zip(report["raw_name"], report["status"]))
+    status = dict(zip(report["raw_name"], report["status"], strict=True))
     assert status["Jardiance"] == "matched"
     assert status["Victoza 3-Pak"] == "matched"
     assert status["Tradjenta"] == "part_d_only"

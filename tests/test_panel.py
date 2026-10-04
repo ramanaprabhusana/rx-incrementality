@@ -114,7 +114,7 @@ def _toy_inputs(n=60, t=6, seed=0):
     rng = np.random.default_rng(seed)
     npis = [f"P{i:04d}" for i in range(n)]
     rows = []
-    for i, npi in enumerate(npis):
+    for _i, npi in enumerate(npis):
         base = rng.uniform(4.0, 6.0)
         for p in range(t):
             rows.append(

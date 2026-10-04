@@ -51,51 +51,71 @@ def header(fig, t, title, subtitle):
     fig.text(0.06, 0.885, subtitle, color=t["ink2"], fontsize=9.5, va="top")
 
 
-def event_study(data, theme):
-    t = THEMES[theme]
-    fig = plt.figure(figsize=(8, 4.6), dpi=DPI, facecolor=t["surface"])
-    ax = fig.add_axes([0.09, 0.13, 0.88, 0.66])
+def _points(ax, t, rel, coefs, ses, colour, scale, dx=0.0):
+    xs = [r + dx for r in rel]
+    for x, b, se in zip(xs, coefs, ses, strict=True):
+        ax.plot([x, x], [scale(b - 1.96 * se), scale(b + 1.96 * se)], color=colour,
+                linewidth=1.6, solid_capstyle="round", zorder=2)
+    ax.plot(xs, [scale(b) for b in coefs], "o", color=colour, markersize=6, zorder=3,
+            markeredgecolor=t["surface"], markeredgewidth=1.4)
+
+
+def _event_axes(ax, t, ylim, ticks, labels, ylabel):
     style(ax, t)
-    series = [("cohort (Sun-Abraham)", "Cohort estimator (Sun and Abraham)", t["s1"], -0.1),
-              ("pooled dummies", "Pooled event-time dummies", t["s2"], 0.1)]
-    handles = []
-    for key, label, colour, dx in series:
-        es = data[key]
-        xs = [r + dx for r in es["rel_periods"]]
-        for x, b, s in zip(xs, es["coefs"], es["ses"]):
-            ax.plot([x, x], [pct(b - 1.96 * s), pct(b + 1.96 * s)], color=colour,
-                    linewidth=1.6, solid_capstyle="round", zorder=2)
-        ax.plot(xs, [pct(b) for b in es["coefs"]], "o", color=colour, markersize=6.5,
-                markeredgecolor=t["surface"], markeredgewidth=1.4, zorder=3)
-        handles.append(Line2D([], [], marker="o", linestyle="", color=colour, markersize=6.5,
-                              markeredgecolor=t["surface"], markeredgewidth=1.4, label=label))
-    ax.plot([-1], [0], "o", color=t["muted"], markersize=5, zorder=3)
-    ax.text(-1, -1.6, "reference", ha="center", va="top", color=t["muted"], fontsize=8)
     ax.axhline(0, color=t["base"], linewidth=0.8, zorder=1)
     ax.axvline(-0.5, color=t["base"], linewidth=0.8, zorder=1)
-    ax.text(-0.42, 10.2, "first payment", color=t["muted"], fontsize=8, va="top")
-
-    c = data["cohort (Sun-Abraham)"]
-    k = max(range(len(c["coefs"])), key=lambda i: c["coefs"][i])
-    top = pct(c["coefs"][k] + 1.96 * c["ses"][k])
-    ax.text(c["rel_periods"][k] - 0.1, top + 0.5, f"{pct(c['coefs'][k]):+.1f}%", ha="center",
-            va="bottom", color=t["ink2"], fontsize=9, fontweight="bold")
-
+    ax.plot([-1], [0], "o", color=t["muted"], markersize=4.5, zorder=3)
     ax.set_xticks(range(-5, 5))
     ax.set_xticklabels([f"{r:+d}" if r else "0" for r in range(-5, 5)])
     ax.set_xlim(-5.6, 4.6)
-    ax.set_ylim(-11, 12)
-    # Ticks at clean values. A rounding formatter on 2.5% steps printed 7.5% as "+8%".
-    ax.set_yticks([-10, -5, 0, 5, 10])
-    ax.set_yticklabels(["-10%", "-5%", "0", "+5%", "+10%"])
-    ax.set_xlabel("Years relative to first payment", color=t["ink2"], fontsize=9)
-    ax.set_ylabel("Change in claims for the promoted drug", color=t["ink2"], fontsize=9)
-    leg = ax.legend(handles=handles, loc="lower right", frameon=False, fontsize=8.5,
-                    handletextpad=0.3, borderaxespad=0.2)
+    ax.set_ylim(*ylim)
+    # Ticks at clean values. A rounding formatter on 2.5% steps once printed 7.5% as "+8%".
+    ax.set_yticks(ticks)
+    ax.set_yticklabels(labels)
+    ax.set_xlabel("Years relative to first payment", color=t["ink2"], fontsize=8.5)
+    ax.set_ylabel(ylabel, color=t["ink2"], fontsize=8.5)
+
+
+def event_study(events, theme):
+    t = THEMES[theme]
+    fig = plt.figure(figsize=(8, 4.6), dpi=DPI, facecolor=t["surface"])
+    left = fig.add_axes([0.08, 0.13, 0.40, 0.58])
+    right = fig.add_axes([0.58, 0.13, 0.40, 0.58])
+
+    intensive = events["physician"]["cohort (Sun-Abraham)"]
+    extensive = events["physician_extensive"]["cohort (Sun-Abraham)"]
+
+    _event_axes(left, t, (-11, 12), [-10, -5, 0, 5, 10], ["-10%", "-5%", "0", "+5%", "+10%"],
+                "Change in claims")
+    _points(left, t, intensive["rel_periods"], intensive["coefs"], intensive["ses"], t["s1"], pct)
+    left.text(-0.42, 11.3, "first payment", color=t["muted"], fontsize=7.5, va="top")
+    p_int = intensive["pretrend_p"]
+    left.set_title(f"How much established prescribers use the drug\npre-trend test passes (p = {p_int:.2f})",
+                   color=t["ink2"], fontsize=8.5, loc="left", pad=6)
+
+    to_pts = lambda b: 100.0 * b  # noqa: E731
+    _event_axes(right, t, (-7, 10.5), [-5, 0, 5, 10], ["-5", "0", "+5", "+10"], "Change in probability (points)")
+    _points(right, t, extensive["rel_periods"], extensive["coefs"], extensive["ses"], t["s1"], to_pts, dx=-0.1)
+    dt = extensive["detrended"]
+    post = [i for i, r in enumerate(extensive["rel_periods"]) if r >= 0]
+    _points(right, t, [extensive["rel_periods"][i] for i in post], [dt["coefs"][i] for i in post],
+            [dt["ses"][i] for i in post], t["s2"], to_pts, dx=0.1)
+    right.set_title("Whether physicians prescribe the drug at all\npre-trend test fails (p < 0.001)",
+                    color=t["ink2"], fontsize=8.5, loc="left", pad=6)
+    handles = [
+        Line2D([], [], marker="o", linestyle="", color=t["s1"], markersize=6,
+               markeredgecolor=t["surface"], markeredgewidth=1.4, label="Estimate"),
+        Line2D([], [], marker="o", linestyle="", color=t["s2"], markersize=6,
+               markeredgecolor=t["surface"], markeredgewidth=1.4, label="Net of the pre-trend"),
+    ]
+    leg = right.legend(handles=handles, loc="lower right", frameon=False, fontsize=8,
+                       handletextpad=0.3, borderaxespad=0.2)
     for txt in leg.get_texts():
         txt.set_color(t["ink2"])
-    header(fig, t, "Prescribing rises after the first payment, with no trend before it",
-           "71,869 physicians, diabetes drugs, Medicare Part D 2019 to 2024. Lines are 95% confidence intervals.")
+
+    header(fig, t, "Prescribing rises after the first payment, but adoption was already rising",
+           "71,869 physicians, diabetes drugs, Medicare Part D 2019 to 2024. "
+           "Cohort event-study estimates with 95% intervals.")
     path = OUT / f"event-study-{theme}.png"
     fig.savefig(path, dpi=DPI, facecolor=t["surface"])
     plt.close(fig)
@@ -131,14 +151,14 @@ def specification(results, theme):
               ("Apparent effect of next year's payment\n(should be zero)",
                lambda s: by[f"{s} + next year's payment"], "lead", "lead_se", 18, [0, 5, 10, 15])]
     ys = [2, 1, 0]
-    for ax, (ptitle, getter, coef_key, se_key, xmax, ticks) in zip(axes, panels):
+    for ax, (ptitle, getter, coef_key, se_key, xmax, ticks) in zip(axes, panels, strict=True):
         style(ax, t)
         ax.grid(axis="y", visible=False)
         ax.grid(axis="x", color=t["grid"], linewidth=0.6)
         ax.set_xlim(0, xmax)
         ax.set_ylim(-0.6, 2.6)
         fig.canvas.draw()
-        for y, (spec, _) in zip(ys, want):
+        for y, (spec, _) in zip(ys, want, strict=True):
             r = getter(spec)
             b = r["coef"] if coef_key == "coef" else r["extra"]["pay_any_lead"]
             s = r["se"] if se_key == "se" else r["extra"]["pay_any_lead_se"]
@@ -167,7 +187,7 @@ def main() -> None:
     data = json.loads((ROOT / "results" / "estimates.json").read_text())
     OUT.mkdir(parents=True, exist_ok=True)
     for theme in THEMES:
-        print(event_study(data["event_studies"]["physician"], theme).relative_to(ROOT))
+        print(event_study(data["event_studies"], theme).relative_to(ROOT))
         print(specification(data["estimates"], theme).relative_to(ROOT))
 
 
