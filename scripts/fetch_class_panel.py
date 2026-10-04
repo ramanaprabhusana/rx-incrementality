@@ -21,22 +21,35 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from rxinc.datasets import (  # noqa: E402
     PART_D_BY_PROVIDER_DRUG_TITLE,
     fetch_part_d,
-    part_d_distributions,
+    part_d_api_by_year,
 )
 
 CLASSES: dict[str, dict[str, list[str]]] = {
+    # Exact Part D Brnd_Name strings, discovered by generic molecule from the
+    # national Geography and Drug file rather than guessed. Part D splits brand
+    # families across pack sizes, devices and formulations (Victoza 2-Pak and
+    # 3-Pak, Bydureon Pen and Bcise, XR variants), and guessing missed 1.58M
+    # Victoza claims in 2019 alone. Generic-name search alone also misses
+    # products, because CMS abbreviates triple-combination generics
+    # ("Empaglifloz/Linaglip/Metformin" for Trijardy Xr). Excluded by design: insulin combinations
+    # (Soliqua, Xultophy), obesity indications (Wegovy, Saxenda, Zepbound) and
+    # unbranded generics, which are never promoted.
     "diabetes": {
         "SGLT2": [
             "Jardiance", "Farxiga", "Invokana", "Steglatro",
-            "Synjardy", "Xigduo XR", "Glyxambi", "Invokamet",
+            "Synjardy", "Synjardy Xr", "Xigduo Xr", "Glyxambi",
+            "Invokamet", "Invokamet Xr", "Qtern", "Segluromet", "Steglujan",
+            "Trijardy Xr",
         ],
         "DPP-4": [
-            "Januvia", "Janumet", "Janumet XR", "Tradjenta",
-            "Onglyza", "Jentadueto", "Kombiglyze XR",
+            "Januvia", "Janumet", "Janumet Xr", "Tradjenta", "Onglyza",
+            "Jentadueto", "Jentadueto Xr", "Kombiglyze Xr",
+            "Nesina", "Kazano", "Oseni",
         ],
         "GLP-1": [
-            "Ozempic", "Trulicity", "Rybelsus", "Victoza",
-            "Mounjaro", "Byetta", "Bydureon Bcise", "Adlyxin",
+            "Ozempic", "Trulicity", "Rybelsus", "Victoza 2-Pak", "Victoza 3-Pak",
+            "Mounjaro", "Byetta", "Bydureon Bcise", "Bydureon Pen", "Bydureon",
+            "Adlyxin",
         ],
     },
     "anticoagulant": {
@@ -67,11 +80,7 @@ def main() -> int:
     brand_to_class = {b: c for c, bs in classes.items() for b in bs}
     brands = sorted(brand_to_class)
 
-    dists = [d for d in part_d_distributions(PART_D_BY_PROVIDER_DRUG_TITLE) if d.api_url]
-    by_year: dict[int, str] = {}
-    for dist in dists:
-        y = year_of(dist.title)
-        by_year.setdefault(y, dist.api_url)
+    by_year = part_d_api_by_year(PART_D_BY_PROVIDER_DRUG_TITLE)
 
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -82,19 +91,25 @@ def main() -> int:
     grand_total = 0
     for year in years:
         target = out_dir / f"{args.klass}_dy{year}.csv"
+        existing = None
+        have: set[str] = set()
         if target.exists() and target.stat().st_size > 0:
-            existing = sum(1 for _ in open(target)) - 1
-            print(f"[{year}] skip, exists ({existing:,} rows)", flush=True)
-            grand_total += existing
+            existing = pd.read_csv(target, dtype={"Prscrbr_NPI": str}, low_memory=False)
+            have = set(existing["Brnd_Name"].unique())
+        # Re-running after the brand list grows fills only the gaps. A brand
+        # with zero rows in a year is re-queried, which is cheap.
+        todo = [b for b in brands if b not in have]
+        if not todo:
+            print(f"[{year}] complete, {len(existing):,} rows", flush=True)
+            grand_total += len(existing)
             continue
 
         start = time.time()
-        frames = []
-        for brand in brands:
+        frames = [] if existing is None else [existing]
+        added = 0
+        for brand in todo:
             try:
-                frame = fetch_part_d(
-                    by_year[year], {"Brnd_Name": brand}, max_rows=None
-                )
+                frame = fetch_part_d(by_year[year], {"Brnd_Name": brand}, max_rows=None)
             except Exception as exc:  # noqa: BLE001
                 print(f"[{year}] {brand}: FAILED {type(exc).__name__}: {exc}", flush=True)
                 continue
@@ -102,20 +117,17 @@ def main() -> int:
                 frame["therapeutic_class"] = brand_to_class[brand]
                 frame["data_year"] = year
                 frames.append(frame)
-
-        if not frames:
-            print(f"[{year}] no rows for any brand", flush=True)
-            continue
+                added += len(frame)
+                print(f"[{year}]   + {brand:16s} {len(frame):>7,} rows", flush=True)
 
         panel = pd.concat(frames, ignore_index=True)
         panel.to_csv(target, index=False)
         grand_total += len(panel)
-        elapsed = time.time() - start
         print(
-            f"[{year}] {len(panel):>8,} rows  "
+            f"[{year}] {len(panel):>8,} rows (+{added:,})  "
             f"{panel['Prscrbr_NPI'].nunique():>7,} prescribers  "
             f"{panel['Brnd_Name'].nunique():>3} brands  "
-            f"{elapsed/60:5.1f} min  -> {target.name}",
+            f"{(time.time()-start)/60:5.1f} min",
             flush=True,
         )
 

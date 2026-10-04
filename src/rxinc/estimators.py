@@ -36,6 +36,7 @@ overstate precision.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Sequence
 
 import numpy as np
 import pandas as pd
@@ -55,6 +56,8 @@ class Estimate:
         n_clusters: Physicians used.
         true_effect: Ground truth when known (simulation); ``None`` on real
             data, where bias is not computable.
+        extra: Coefficients and standard errors on any control variables,
+            keyed ``"<name>"`` and ``"<name>_se"``.
     """
 
     name: str
@@ -63,6 +66,7 @@ class Estimate:
     n_obs: int
     n_clusters: int
     true_effect: float | None = None
+    extra: dict[str, float] = field(default_factory=dict)
 
     @property
     def t_stat(self) -> float:
@@ -264,6 +268,70 @@ def _within_transform(
             break
 
     return values
+
+
+def _absorb(
+    frame: pd.DataFrame,
+    columns: list[str],
+    factors: Sequence[str],
+    tol: float = 1e-10,
+    max_iter: int = 1000,
+) -> np.ndarray:
+    """Partial out any number of fixed-effect factors by alternating projections.
+
+    Repeatedly demeans each column by every factor in turn until the largest
+    remaining group mean, across all factors, falls below ``tol``. Exact on
+    unbalanced panels and for overlapping factors, and equivalent to including a
+    full set of dummies for every factor.
+
+    Args:
+        frame: Data.
+        columns: Columns to transform.
+        factors: Fixed-effect identifier columns to absorb.
+        tol: Convergence tolerance on the largest remaining group mean.
+        max_iter: Maximum sweeps.
+
+    Returns:
+        Array of shape ``(len(frame), len(columns))``.
+    """
+    values = frame[columns].to_numpy(dtype=float).copy()
+    codes, counts = [], []
+    for f in factors:
+        c, _ = pd.factorize(frame[f])
+        k = c.max() + 1
+        codes.append((c, k))
+        counts.append(np.bincount(c, minlength=k).astype(float))
+    values -= values.mean(axis=0, keepdims=True)
+    for _ in range(max_iter):
+        worst = 0.0
+        for j in range(values.shape[1]):
+            col = values[:, j]
+            for (c, k), n in zip(codes, counts):
+                m = np.bincount(c, weights=col, minlength=k) / n
+                col = col - m[c]
+                worst = max(worst, float(np.abs(m).max()))
+            values[:, j] = col
+        if worst < tol:
+            break
+    return values
+
+
+def _absorbed_dof(frame: pd.DataFrame, factors: Sequence[str], cluster: str) -> int:
+    """Count absorbed parameters for the cluster-robust small-sample correction.
+
+    Factors nested within clusters (every level falls inside one cluster) are
+    excluded, following the convention of high-dimensional fixed-effect
+    estimators such as reghdfe. Counting them is wrong in principle, since the
+    cluster correction already accounts for within-cluster parameters, and
+    ruinous in practice: physician-by-year plus physician-by-drug effects can
+    outnumber observations and send the correction to infinity.
+    """
+    total = 0
+    for f in factors:
+        per_level = frame.groupby(f, sort=False)[cluster].nunique()
+        if int(per_level.max()) > 1:
+            total += int(frame[f].nunique())
+    return max(total - max(len(factors) - 1, 0), 0)
 
 
 def _true_effect(frame: pd.DataFrame) -> float | None:
@@ -571,6 +639,8 @@ def triple_diff(
     unit: str = "physician_year",
     product: str = "drug_year",
     cluster_on: str = "physician_id",
+    controls: Sequence[str] = (),
+    absorb: Sequence[str] | None = None,
 ) -> Estimate:
     """Physician-by-year and drug-by-year fixed effects on a drug-level panel.
 
@@ -600,6 +670,12 @@ def triple_diff(
         product: Composite drug-by-period key to absorb.
         cluster_on: Column to cluster standard errors on. Physician is the right
             level, since a physician's drugs share their unobserved shocks.
+        controls: Additional regressors, partialled out alongside the fixed
+            effects. Their coefficients are returned in ``Estimate.extra``.
+        absorb: Fixed-effect columns to absorb. Defaults to ``(unit, product)``.
+            Add a physician-by-drug key to also absorb persistent
+            physician-drug affinity, which matters whenever representatives
+            target physicians who already favour their drug.
 
     Returns:
         The estimate, with cluster-robust standard errors.
@@ -609,15 +685,17 @@ def triple_diff(
             variation left after absorbing both fixed effects, which means the
             design is not identified on this panel.
     """
-    required = {outcome, treatment, unit, product, cluster_on}
+    controls = list(controls)
+    factors = list(absorb) if absorb is not None else [unit, product]
+    required = {outcome, treatment, cluster_on, *controls, *factors}
     missing = sorted(required - set(frame.columns))
     if missing:
         raise ValueError(f"triple_diff needs columns {missing}")
 
-    demeaned = _within_transform(frame, [outcome, treatment], unit=unit, time=product)
+    demeaned = _absorb(frame, [outcome, treatment, *controls], factors)
     y, d = demeaned[:, 0], demeaned[:, 1:]
 
-    residual_variation = float(np.abs(d).max())
+    residual_variation = float(np.abs(d[:, 0]).max())
     if residual_variation < 1e-10:
         raise ValueError(
             "Treatment has no variation within physician-year across drugs; "
@@ -625,21 +703,26 @@ def triple_diff(
             "of their drugs."
         )
 
-    n_unit = frame[unit].nunique()
-    n_product = frame[product].nunique()
     beta, vcov, _ = _ols(
         y,
         d,
         cluster=frame[cluster_on].to_numpy(),
-        absorbed=n_unit + n_product - 1,
+        absorbed=_absorbed_dof(frame, factors, cluster_on),
     )
+    extra: dict[str, float] = {}
+    for k, name in enumerate(controls, start=1):
+        extra[name] = float(beta[k])
+        extra[f"{name}_se"] = float(np.sqrt(vcov[k, k]))
+    label = "Triple diff (" + " + ".join(factors) + ")" if absorb is not None \
+        else "Triple diff (physician-yr + drug-yr)"
     return Estimate(
-        name="Triple diff (physician-yr + drug-yr)",
+        name=label,
         coef=float(beta[0]),
         se=float(np.sqrt(vcov[0, 0])),
         n_obs=len(frame),
         n_clusters=int(frame[cluster_on].nunique()),
         true_effect=_true_effect(frame),
+        extra=extra,
     )
 
 
@@ -651,6 +734,7 @@ def drug_event_study(
     unit: str = "physician_year",
     product: str = "drug_year",
     cluster_on: str = "physician_id",
+    absorb: Sequence[str] | None = None,
 ) -> EventStudyResult:
     """Event study around payment onset, inside the triple-difference design.
 
@@ -671,10 +755,12 @@ def drug_event_study(
         unit: Composite physician-by-period key to absorb.
         product: Composite drug-by-period key to absorb.
         cluster_on: Clustering column.
+        absorb: Fixed-effect columns to absorb; defaults to ``(unit, product)``.
 
     Returns:
         Coefficients, standard errors and covariance by relative period.
     """
+    factors = list(absorb) if absorb is not None else [unit, product]
     work = frame.copy()
     rel = work["event_time"].to_numpy(dtype=float)
     is_treated_pair = ~np.isnan(rel)
@@ -687,13 +773,13 @@ def drug_event_study(
         work[name] = (is_treated_pair & (rel_clipped == r)).astype(float)
         columns.append(name)
 
-    demeaned = _within_transform(work, [outcome, *columns], unit=unit, time=product)
+    demeaned = _absorb(work, [outcome, *columns], factors)
     y, X = demeaned[:, 0], demeaned[:, 1:]
     beta, vcov, _ = _ols(
         y,
         X,
         cluster=work[cluster_on].to_numpy(),
-        absorbed=work[unit].nunique() + work[product].nunique() - 1,
+        absorbed=_absorbed_dof(work, factors, cluster_on),
     )
     return EventStudyResult(
         rel_periods=np.array(rel_grid),

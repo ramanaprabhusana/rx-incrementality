@@ -24,6 +24,13 @@ Three selection regimes, distinguished by *what* the manufacturer keys on:
     exactly the dimension the triple difference relies on, so it should fail
     here too. Its saving grace is that a drug-level pre-trend test can see it.
 
+``affinity``
+    The manufacturer targets physicians who already favour its drug: a level,
+    not a trend, at the physician-drug grain. Physician-by-year and
+    drug-by-year effects do not absorb it, but physician-by-drug effects do.
+    This regime was added after real data showed next year's payments
+    predicting this year's prescribing as strongly as this year's payments.
+
 The point of separating the last two is honesty. The triple difference is not
 a universal solvent, and the simulation is built to show precisely where it
 stops working.
@@ -42,6 +49,7 @@ VALID_DRUG_TARGETING: tuple[str, ...] = (
     "none",
     "physician_trajectory",
     "drug_trajectory",
+    "affinity",
 )
 
 
@@ -76,6 +84,8 @@ class DrugPanelConfig:
         onset_intercept: Baseline log-odds of a first payment.
         onset_on_trajectory: Weight on the relevant trajectory in the payment
             hazard. Drives both trajectory regimes.
+        onset_on_affinity: Weight on standardised physician-drug affinity in
+            the payment hazard. Drives the ``affinity`` regime.
         burn_in: Periods before any payment can occur.
         seed: Random seed.
     """
@@ -97,6 +107,7 @@ class DrugPanelConfig:
     base_log_rx: float = 3.2
     onset_intercept: float = -2.60
     onset_on_trajectory: float = 3.00
+    onset_on_affinity: float = 1.20
     burn_in: int = 2
     seed: int = 20260929
 
@@ -187,6 +198,9 @@ def simulate_drug_panel(config: DrugPanelConfig | None = None) -> pd.DataFrame:
                 # physician-year.
                 recent = alpha[:, period - 1] - alpha[:, period - 2]
                 hazard += cfg.onset_on_trajectory * recent[:, None]
+            elif cfg.targeting == "affinity":
+                # Level selection at the physician-drug grain.
+                hazard += cfg.onset_on_affinity * affinity / cfg.sigma_affinity
             elif cfg.targeting == "drug_trajectory" and period >= 2:
                 # Drug-specific momentum: varies within physician-year, which
                 # is the dimension the triple difference depends on.
@@ -234,6 +248,9 @@ def simulate_drug_panel(config: DrugPanelConfig | None = None) -> pd.DataFrame:
     )
     frame["drug_year"] = (
         frame["drug_id"].astype(str) + "_" + frame["period"].astype(str)
+    )
+    frame["physician_drug"] = (
+        frame["physician_id"].astype(str) + "_" + frame["drug_id"].astype(str)
     )
     frame.attrs["true_effect"] = cfg.tau
     frame.attrs["targeting"] = cfg.targeting

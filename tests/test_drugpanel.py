@@ -151,3 +151,45 @@ def test_drug_event_study_omits_reference_period():
     result = drug_event_study(df, leads=2, lags=3)
     assert -1 not in set(result.rel_periods.tolist())
     assert len(result.coefs) == 5
+
+
+def test_three_factor_absorption_matches_explicit_dummies():
+    """The k-factor engine against brute-force dummies, unbalanced on purpose."""
+    from rxinc.estimators import _absorb
+    df = simulate_drug_panel(DrugPanelConfig(n_physicians=25, n_drugs=3, n_periods=5))
+    df = df.sample(frac=0.8, random_state=1).reset_index(drop=True)
+    factors = ["physician_year", "drug_year", "physician_drug"]
+    d = _absorb(df, ["log_rx", "treated"], factors)
+    coef = float((d[:, 1] @ d[:, 0]) / (d[:, 1] @ d[:, 1]))
+    X = [np.ones(len(df)), df["treated"].astype(float).to_numpy()]
+    for f in factors:
+        X.append(pd.get_dummies(df[f], drop_first=True).to_numpy(float))
+    X = np.column_stack(X)
+    beta, *_ = np.linalg.lstsq(X, df["log_rx"].to_numpy(), rcond=None)
+    assert coef == pytest.approx(beta[1], abs=1e-6)
+
+
+def test_nested_factors_excluded_from_dof():
+    from rxinc.estimators import _absorbed_dof
+    df = simulate_drug_panel(DrugPanelConfig(n_physicians=30, n_drugs=4, n_periods=5))
+    # physician_year and physician_drug sit inside physician clusters; drug_year does not.
+    dof = _absorbed_dof(df, ["physician_year", "drug_year", "physician_drug"], "physician_id")
+    assert dof == df["drug_year"].nunique() - 2
+
+
+def _three_way(df):
+    return triple_diff(df, absorb=("physician_year", "drug_year", "physician_drug"))
+
+
+def test_affinity_targeting_breaks_two_way_and_three_way_survives():
+    """Level selection at the physician-drug grain: the gap the real data exposed."""
+    truth = DrugPanelConfig().tau
+    two_way = _mean_coef("affinity", triple_diff)
+    three_way = _mean_coef("affinity", _three_way)
+    assert two_way > truth * 2
+    assert three_way == pytest.approx(truth, abs=0.015)
+
+
+def test_three_way_still_survives_physician_momentum():
+    truth = DrugPanelConfig().tau
+    assert _mean_coef("physician_trajectory", _three_way) == pytest.approx(truth, abs=0.015)

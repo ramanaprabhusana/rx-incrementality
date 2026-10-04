@@ -19,3 +19,5 @@ venv/
 
 # OS / editor
 .DS_Store
+results/*.log
+results/dryrun.json

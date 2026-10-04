@@ -66,11 +66,13 @@ class Distribution:
         title: Distribution title as CMS publishes it.
         api_url: JSON API endpoint supporting ``size``/``offset``/``filter``.
         download_url: Bulk CSV URL, when the portal exposes one.
+        year: Data year, when it can be determined.
     """
 
     title: str
     api_url: str | None
     download_url: str | None
+    year: int | None = None
 
 
 def _get_json(url: str, timeout: int = DEFAULT_TIMEOUT) -> Any:
@@ -106,41 +108,93 @@ def cms_catalog(timeout: int = DEFAULT_TIMEOUT) -> list[dict[str, Any]]:
     return _get_json(CMS_CATALOG_URL, timeout=timeout).get("dataset", [])
 
 
+def _record_year(record: dict[str, Any], title: str) -> int | None:
+    """Data year of a catalog record, from ``temporal`` or the title suffix."""
+    temporal = record.get("temporal")
+    if isinstance(temporal, list) and temporal:
+        temporal = temporal[0]
+    if isinstance(temporal, dict) and temporal.get("endDate"):
+        return int(str(temporal["endDate"])[:4])
+    if isinstance(temporal, str) and "/" in temporal:
+        # Old layout spans every year in one record, so it says nothing
+        # about an individual distribution.
+        pass
+    tail = title.rsplit(":", 1)[-1].strip()
+    return int(tail[:4]) if tail[:4].isdigit() else None
+
+
 def part_d_distributions(
     title: str = PART_D_BY_PROVIDER_TITLE, timeout: int = DEFAULT_TIMEOUT
 ) -> list[Distribution]:
     """List published years of a Part D Prescribers dataset.
 
+    CMS has published this catalog in two layouts, and switched between them
+    without notice. Originally one record held every year as separate
+    distributions. Later each year became its own record titled
+    ``"<title> : YYYY-MM-DD"``. Both are handled, so a catalog restructure
+    does not silently break acquisition.
+
     Args:
-        title: Exact catalog title.  Use
+        title: Base catalog title, without any year suffix. Use
             :data:`PART_D_BY_PROVIDER_TITLE` for prescriber totals or
             :data:`PART_D_BY_PROVIDER_DRUG_TITLE` for per-drug detail.
         timeout: Socket timeout in seconds.
 
     Returns:
-        One :class:`Distribution` per published year, newest first.
+        One :class:`Distribution` per published distribution, newest year
+        first.
 
     Raises:
-        LookupError: If no catalog entry matches ``title``.
+        LookupError: If no catalog entry matches ``title`` in either layout.
     """
+    out: list[Distribution] = []
     for record in cms_catalog(timeout=timeout):
-        if record.get("title") == title:
-            out = []
-            for dist in record.get("distribution") or []:
-                access = dist.get("accessURL")
-                download = dist.get("downloadURL")
-                out.append(
-                    Distribution(
-                        title=dist.get("title", ""),
-                        api_url=access if access and access.endswith("/data") else None,
-                        download_url=download,
-                    )
+        record_title = record.get("title", "")
+        if record_title != title and not record_title.startswith(f"{title} :"):
+            continue
+        per_year_layout = record_title != title
+        for dist in record.get("distribution") or []:
+            dist_title = dist.get("title") or record_title
+            access = dist.get("accessURL")
+            year = (
+                _record_year(record, record_title)
+                if per_year_layout
+                else _record_year({}, dist_title)
+            )
+            out.append(
+                Distribution(
+                    title=dist_title,
+                    api_url=access if access and access.endswith("/data") else None,
+                    download_url=dist.get("downloadURL"),
+                    year=year,
                 )
-            return out
-    raise LookupError(
-        f"No CMS catalog entry titled {title!r}. Titles change between "
-        "release years; list cms_catalog() to find the current one."
-    )
+            )
+    if not out:
+        raise LookupError(
+            f"No CMS catalog entry titled {title!r}, in either the combined or "
+            "per-year layout. List cms_catalog() to find the current title."
+        )
+    out.sort(key=lambda d: d.year or 0, reverse=True)
+    return out
+
+
+def part_d_api_by_year(
+    title: str = PART_D_BY_PROVIDER_DRUG_TITLE, timeout: int = DEFAULT_TIMEOUT
+) -> dict[int, str]:
+    """Map data year to its queryable API URL.
+
+    Args:
+        title: Base catalog title.
+        timeout: Socket timeout in seconds.
+
+    Returns:
+        ``{year: api_url}`` for every year with a JSON API distribution.
+    """
+    out: dict[int, str] = {}
+    for dist in part_d_distributions(title, timeout=timeout):
+        if dist.api_url and dist.year is not None:
+            out.setdefault(dist.year, dist.api_url)
+    return out
 
 
 def part_d_row_count(api_url: str, filters: dict[str, str] | None = None) -> int:
