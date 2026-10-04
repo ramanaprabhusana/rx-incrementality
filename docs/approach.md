@@ -114,29 +114,41 @@ brand-year totals for 2023:
 sponsored meals a year. A binary "any payment" variable would label nearly every
 engaged physician as treated and discard the intensity that actually varies.
 
-Treatment is therefore specified as `log(1 + amount)` for the primary estimate,
-with threshold-based binary variants reported as robustness, and the small tail
-of speaking and consulting relationships analysed separately since those differ
-in kind, not only degree.
+The primary treatment is the binary relationship: any payment about the drug
+in the year. Intensity enters as `log(1 + amount)`, dollar thresholds of $25 and
+$100, and a split between food-only and speaker, consulting or travel payments,
+all reported in [results.md](results.md). The results justify the binary choice:
+a speaker payment, with a median near $940, moves prescribing +4.9% against +4.0%
+for a meal of about $17, and doubling payment value adds only about 1.1%. The
+effect runs through the relationship more than the transfer.
 
 ## Remaining threats
 
 1. **Drug-specific targeting.** A manufacturer may pay Dr. X about drug A
-   precisely because Dr. X's prescribing of drug A specifically is rising.
-   `alpha_it` does not absorb this. Test with a physician-drug level event study
-   and pre-trend test, reusing the existing diagnostics.
+   precisely because Dr. X's prescribing of drug A specifically is rising. No
+   fixed effect here absorbs this. Tested with a cohort event study and a
+   next-year-payment falsification test: pre-trends pass (p = 0.33), and the
+   next-year coefficient is small but not zero (+0.006, SE 0.002).
 2. **Spillover.** Two kinds, and the second is not hypothetical. If engagement
    about drug A suppresses drug B, then B is not a clean control and tau is
-   overstated; testable by checking whether payments about drug A move the same
-   manufacturer's unrelated products. Separately, Agha and Zeltzer (2022, AEJ:
-   Policy) measured **peer** spillovers in anticoagulants and found they account
-   for roughly a quarter of the total effect. Untreated physicians are therefore
-   not a clean control either, and a design ignoring this is mis-specified.
+   overstated. Tested: payment about another of the same manufacturer's drugs
+   lowers prescribing by 0.8%, and controlling for it moves tau from +4.0% to
+   +4.1%. Separately, Agha and Zeltzer (2022, AEJ: Policy) measured **peer**
+   spillovers worth roughly a quarter of the total effect in anticoagulants.
+   A same-city proxy shows nothing here, but a city is far coarser than their
+   shared-patient networks, so this threat is not resolved.
 3. **Annual periodicity.** Part D is annual, so payments and prescribing within
    the same year cannot be ordered. This genuinely weakens short-run event
    studies and cannot be fixed with these data.
 4. **Crosswalk error.** Mismatched drug names attenuate tau toward zero. Match
    rates get reported, not buried.
+
+## Population
+
+Open Payments covers non-physician practitioners only from program year 2021
+and never covers pharmacists or physicians in training. Physicians, whose
+exposure is observed every year, are the primary population. Nurse
+practitioners and physician assistants are estimated separately on 2021 to 2024.
 
 ## Analysis window
 
@@ -166,10 +178,10 @@ class.
 | --- | --- | --- |
 | 1. Scope | Select therapeutic class | Done: diabetes |
 | 2. Acquire Part D | Brand families, 2019 to 2024 | Done: 3,715,046 rows |
-| 3. Acquire payments | Stream and filter by brand family | Done: about 5.49M records |
+| 3. Acquire payments | Stream and filter by brand family | Done: 5,491,153 records |
 | 4. Link | NPI join | Done |
 | 5. Crosswalk | Brand families on both sides | Done: 28 of 29 families matched |
-| 6. Panel | Physician x family x year | Done: 7,654,946 cells |
+| 6. Panel | Prescriber x family x year, coverage-aware | Done: 6,180,734 physician cells |
 | 7. Estimate | Three-way fixed effects | Done: [results.md](results.md) |
 | 8. Validate | Simulated ground truth, four regimes | Done |
 

@@ -72,8 +72,51 @@ substantially overstate precision. `test_clustered_se_exceeds_classical_under_wi
 pins this down.
 
 The cluster-robust covariance uses the standard sandwich with a finite-sample
-correction $\frac{G}{G-1}\cdot\frac{N-1}{N-K}$, where $K$ counts parameters
-removed by the within transform as well as those explicitly estimated.
+correction $\frac{G}{G-1}\cdot\frac{N-1}{N-K}$. For the single-outcome
+estimators, $K$ counts parameters removed by the within transform as well as
+those explicitly estimated. For the drug-level estimators, fixed effects nested
+within clusters are excluded from $K$, the convention of high-dimensional
+fixed-effect estimators such as reghdfe: physician-by-year and physician-by-drug
+effects sit inside physician clusters, and counting them would make $K$ exceed
+$N$ on the real panel.
+
+## The drug-level design
+
+The design applied to CMS data compares drugs within a physician-year:
+
+$$\log(\text{claims}_{ijt}) = \tau\, \text{Paid}_{ijt} + \alpha_{it} + \delta_{jt} + \mu_{ij} + \varepsilon_{ijt}$$
+
+with physician-by-year $\alpha_{it}$, drug-by-year $\delta_{jt}$ and
+physician-by-drug $\mu_{ij}$ effects, absorbed by alternating projections over
+any number of factors (`rxinc.estimators._absorb`, checked against explicit
+dummy regression with three overlapping factors on an unbalanced panel).
+$\alpha_{it}$ absorbs physician momentum, $\mu_{ij}$ absorbs a physician's
+persistent preference for a drug, which is what representatives target, and
+$\delta_{jt}$ absorbs national drug shocks. The remaining threat is targeting on
+a physician's rising use of one specific drug, which varies within the
+physician-year.
+
+## Event studies with staggered onsets
+
+`drug_event_study` fits pooled relative-time dummies. With staggered onsets and
+effects that build over time or differ across cohorts, pooled dummies average
+cohort-specific effects with weights that can be contaminated, so even
+pre-period coefficients can pick up other cohorts' post-period effects.
+`cohort_event_study` implements the interaction-weighted estimator of Sun and
+Abraham (2021): one coefficient per (onset cohort, relative period) against
+never-treated pairs, aggregated per relative period with weights equal to each
+cohort's share of that period's treated observations, and delta-method standard
+errors with weights held fixed. Relative periods no pair reaches are dropped
+rather than reported as zero. Pairs whose onset is unknown must be removed first,
+or they would enter as never treated.
+
+## Exposure that is unobserved, not zero
+
+Open Payments covers non-physician practitioners only from 2021, and never covers
+pharmacists or physicians in training. `rxinc.drugdata` classifies every
+prescriber, marks payment exposure missing before coverage begins, and moves the
+left-censoring year to the first covered year. Estimation drops cells with
+missing exposure rather than treating them as unpaid.
 
 ## Why simulate at all
 
