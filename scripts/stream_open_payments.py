@@ -23,10 +23,8 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
+from rxinc.crosswalk import brand_family, in_class  # noqa: E402
 from rxinc.datasets import open_payments_general_distribution  # noqa: E402
-
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from fetch_class_panel import CLASSES  # noqa: E402
 
 PRODUCT_SLOTS = range(1, 6)
 PRODUCT_COL = "Name_of_Drug_or_Biological_or_Device_or_Medical_Supply_{}"
@@ -73,12 +71,11 @@ class _CountingReader:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--year", type=int, required=True)
-    parser.add_argument("--class", dest="klass", default="diabetes", choices=sorted(CLASSES))
+    parser.add_argument("--class", dest="klass", default="diabetes", choices=["diabetes"])
     parser.add_argument("--chunksize", type=int, default=400_000)
     parser.add_argument("--out-dir", default="data/raw")
     args = parser.parse_args()
 
-    brands = {b.upper() for bs in CLASSES[args.klass].values() for b in bs}
     dist = open_payments_general_distribution(args.year)
     url = dist.download_url
     assert url
@@ -88,13 +85,14 @@ def main() -> int:
     if out.exists():
         out.unlink()
 
-    print(f"year={args.year} class={args.klass} brands={len(brands)}", flush=True)
+    print(f"year={args.year} class={args.klass} matching=brand-family", flush=True)
     print(f"streaming {url.split('/')[-1]}", flush=True)
 
     request = urllib.request.Request(url)
     started = time.time()
     scanned = matched_total = 0
     wrote_header = False
+    family_cache: dict[str, bool] = {}
 
     with urllib.request.urlopen(request, timeout=300) as response:
         total = response.headers.get("Content-Length")
@@ -112,13 +110,20 @@ def main() -> int:
         for chunk_no, chunk in enumerate(reader_iter, start=1):
             scanned += len(chunk)
 
+            # Match on brand family, not exact names. Exact matching missed
+            # XIGDUO (listed as XIGDUO XR), TRIJARDY XR, STEGLUJAN, SEGLUROMET
+            # and variant spellings. Family lookups are memoised per distinct
+            # string, so the cost is per unique name, not per row.
             mask = pd.Series(False, index=chunk.index)
             for slot in PRODUCT_SLOTS:
                 col = PRODUCT_COL.format(slot)
                 if col in chunk.columns:
-                    mask |= (
-                        chunk[col].fillna("").str.upper().str.strip().isin(brands)
-                    )
+                    values = chunk[col]
+                    for name in values.dropna().unique():
+                        if name not in family_cache:
+                            family_cache[name] = in_class(brand_family(name))
+                    keep = {n for n in values.dropna().unique() if family_cache[n]}
+                    mask |= values.isin(keep)
 
             hits = chunk[mask]
             if len(hits):
