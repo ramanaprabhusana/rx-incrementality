@@ -110,6 +110,16 @@ errors with weights held fixed. Relative periods no pair reaches are dropped
 rather than reported as zero. Pairs whose onset is unknown must be removed first,
 or they would enter as never treated.
 
+## When a pre-trend test fails
+
+`detrend_event_study` fits a line through the lead coefficients, constrained
+through zero at the reference period and weighted by their full covariance,
+extrapolates it, and subtracts it from every coefficient, with delta-method
+standard errors that include the uncertainty in the slope. It is a sensitivity
+analysis under the assumption that the pre-existing trend would have continued
+linearly, not identification. Rambachan and Roth (2023) formalise how far that
+assumption can be relaxed.
+
 ## Exposure that is unobserved, not zero
 
 Open Payments covers non-physician practitioners only from 2021, and never covers

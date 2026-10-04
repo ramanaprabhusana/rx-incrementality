@@ -35,18 +35,32 @@ Ozempic, Rybelsus, Synjardy, Tradjenta, Trulicity, Victoza, Xigduo.
 Physicians. Fixed effects for physician-by-year, drug-by-year and
 physician-by-drug. Standard errors clustered by physician.
 
-| Outcome | Estimate | 95% CI |
-| --- | ---: | ---: |
-| Claims for the promoted drug | **+4.0%** | 3.6 to 4.3% |
-| Prescribes the drug at the reporting floor | **+2.5 points** | 2.4 to 2.7 (about 9% of a 29.3% base) |
-| Claims per log(1 + payment dollars) | +1.6% | 1.5 to 1.7% |
-| Claims, controlling for next year's payment | **+2.5%** | 2.2 to 2.9% (conservative) |
+| Outcome | Estimate | 95% CI | Pre-trend test |
+| --- | ---: | ---: | --- |
+| **Claims for the promoted drug** | **+4.0%** | 3.6 to 4.3% | passes, p = 0.33 |
+| Same, pairs above the reporting floor every year | +4.1% | 3.6 to 4.7% | |
+| Same, controlling for next year's payment | +2.5% | 2.2 to 2.9% | |
+| Claims per log(1 + payment dollars) | +1.6% | 1.5 to 1.7% | |
+| Prescribes the drug at all (11-claim floor) | +2.5 points | 2.4 to 2.7 | **fails, p < 0.001** |
 
-The honest range for the effect is about **2.5 to 4.0%**.
+**The credible result is the intensive margin: about 2.5 to 4.0% more claims**
+among physicians already prescribing the drug. It passes its pre-trend test, and
+it is unchanged (+4.1%) on pairs above the reporting floor in every year, where
+a payment cannot change who is observed, so selection through the floor is not
+driving it.
+
+**The extensive margin is not credible as a causal estimate.** In the years
+before a physician is first paid about a drug, the probability that they
+prescribe it was already climbing: -4.9, -2.2, -1.3 and -0.4 points at four, three,
+two and one year before the reference year. Representatives target physicians
+who are starting to adopt a drug, which is drug-specific targeting, the one
+pattern this design cannot absorb. Net of a linear projection of that trend,
+adoption still rises about 3.4 points (SE 0.4) after the first payment, which is
+suggestive but rests on the trend continuing linearly.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="figures/event-study-dark.png">
-  <img alt="Event study: estimates near zero in the years before the first payment, rising to about 7.5 percent two years after" src="figures/event-study-light.png" width="760">
+  <img alt="Left: claims flat before the first payment, rising to about 7.5 percent two years after. Right: the probability of prescribing at all was already rising before the first payment; net of that trend it still rises about 5 points" src="figures/event-study-light.png" width="760">
 </picture>
 
 ## The specification is most of the answer
@@ -70,22 +84,22 @@ physician-year effects removes most of the failure and lowers the estimate by
 about 45%. This does not contradict Carey et al., whose monthly data show flat
 pre-trends; at monthly granularity a lead is weeks rather than a year.
 
-## Event study
+## Event studies
 
 Clean onsets only, 3-way fixed effects, physicians, reference year t-1.
 
-| Years from first payment | Cohort estimator | Pooled dummies |
-| ---: | ---: | ---: |
-| -5 | -4.8% | |
-| -4 | -0.4% | |
-| -3 | -0.8% | -2.1% |
-| -2 | -0.5% | -0.9% |
-| 0 | +2.0% | +2.1% |
-| +1 | +6.9% | +6.8% |
-| +2 | **+7.5%** | +7.9% |
-| +3 | +5.3% | +6.1% |
-| +4 | +3.0% | |
-| Joint pre-trend test | p = 0.33 | p = 0.06 |
+| Years from first payment | Claims: cohort estimator | Claims: pooled dummies | Prescribes at all: cohort estimator |
+| ---: | ---: | ---: | ---: |
+| -5 | -4.8% | | -4.88 pt |
+| -4 | -0.4% | | -2.19 pt |
+| -3 | -0.8% | -2.1% | -1.26 pt |
+| -2 | -0.5% | -0.9% | -0.39 pt |
+| 0 | +2.0% | +2.1% | -0.07 pt |
+| +1 | +6.9% | +6.8% | +6.71 pt |
+| +2 | **+7.5%** | +7.9% | +7.93 pt |
+| +3 | +5.3% | +6.1% | +7.01 pt |
+| +4 | +3.0% | | +6.69 pt |
+| Joint pre-trend test | p = 0.33 | p = 0.06 | **p < 0.001** |
 
 The **cohort estimator** (Sun and Abraham, 2021) fits each onset cohort
 separately against never-paid pairs and aggregates with explicit cohort weights.
@@ -93,11 +107,31 @@ Pooled relative-time dummies average across cohorts with weights that can be
 contaminated when effects build over time, which they do here. On simulated data
 with growing, cohort-specific effects the pooled version manufactures a lead
 that is not there; on the real data it shows a -2.1% lead at t-3 (t = -2.3) that
-the cohort estimator does not (-0.8%, SE 0.9%). The t-5 estimate comes from the
-2024 cohort alone and is correspondingly noisy.
+the cohort estimator does not (-0.8%, SE 0.9%). The t-5 estimates come from the
+2024 cohort alone.
 
-The effect builds over two years and then fades: +2.0% in the onset year, +7.5%
-two years later, +3.0% by year four.
+### Net of the pre-trend
+
+`rxinc.diagnostics.detrend_event_study` fits a line through the leads,
+constrained through zero at the reference year and weighted by their full
+covariance, extrapolates it, and subtracts it. It assumes the pre-existing trend
+would have continued linearly; Rambachan and Roth (2023) formalise how far that
+can be relaxed.
+
+| Years from first payment | Claims, net of pre-trend | Prescribes at all, net of pre-trend |
+| ---: | ---: | ---: |
+| Pre-trend slope per year | +0.5% (SE 0.4), not significant | +0.75 pt (SE 0.11) |
+| 0 | +1.5% | -0.83 pt |
+| +1 | +5.9% | +5.20 pt |
+| +2 | +6.0% | +5.67 pt |
+| +3 | +3.4% | +4.00 pt |
+| +4 | +0.6% | +2.93 pt |
+| Post-payment average | **+3.5%** (SE 1.3) | **+3.40 pt** (SE 0.36) |
+
+For claims the adjustment changes little, as it should when pre-trends are flat.
+For adoption the leads flatten toward onset, which suggests adoption was
+saturating; if so, a straight-line projection overstates the counterfactual trend
+and the adjusted figures lean conservative.
 
 ## Robustness
 
@@ -112,6 +146,7 @@ two years later, +3.0% by year four.
 | Controlling for payments about the same manufacturer's other drugs | +4.1% | 3.8 to 4.5% |
 | Excluding Mounjaro | +4.0% | 3.6 to 4.3% |
 | Physicians not required to appear every year (217,388) | +4.0% | 3.7 to 4.3% |
+| Pairs above the reporting floor in every year | +4.1% | 3.6 to 4.7% |
 
 **Money matters less than contact.** Speaker, consulting and travel payments are
 under 2% of records but about half of all dollars, with a median near $940
@@ -185,13 +220,20 @@ correct. Non-physician practitioners are estimated separately on 2021 to 2024.
 Specifications are labelled in `results/estimates.json` by when they were added:
 round 1 before the first full run, round 2 after it (the fixed-effect
 comparisons), round 3 after the coverage problem was found (the population
-change and the robustness checks the documentation had promised but not run).
+change and the robustness checks the documentation had promised but not run),
+round 4 to address selection through the reporting floor (the always-observed
+pairs and the extensive-margin event study, which is what exposed the adoption
+pre-trend).
 
 ## What these numbers do not support
 
-- **Causation beyond doubt.** Pre-trends pass and the falsification test nearly
-  does, but the residual next-year coefficient (+0.006, SE 0.002) shows a little
-  anticipatory targeting remains. Drug-specific targeting cannot be excluded.
+- **A causal effect on adoption.** The extensive margin fails its pre-trend
+  test: physicians were already moving toward a drug before they were paid
+  about it. The trend-adjusted +3.4 points is a sensitivity bound, not an
+  estimate.
+- **Causation beyond doubt, even for claims.** Pre-trends pass and the
+  falsification test nearly does, but the residual next-year coefficient
+  (+0.006, SE 0.002) shows a little anticipatory targeting remains.
 - **The whole market.** Medicare Part D only, which matters for GLP-1 agents given
   substantial commercial and cash-pay use.
 - **Small prescribers.** Cells under 11 claims are suppressed; the intensive
