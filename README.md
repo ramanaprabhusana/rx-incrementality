@@ -28,8 +28,13 @@ point estimate is not credible as a plain causal estimate.
 Rambachan and Roth (2023) bounds, the effects in the first two years after
 payment survive the pre-existing trend's slope changing by about 1 point per
 year, more than the trend bent in the two years before payments started. Effects
-three or more years out do not survive any meaningful bending, and adoption does
-not survive the largest bending observed, four years before onset.
+three or more years out do not survive any meaningful bending.
+
+Adoption's trend only ever flattened before payments. Imposing just that,
+that it could keep flattening but not re-accelerate, the adoption effect in the
+first two years is **at least +1.67 points at every degree of flattening**. Sign
+restrictions ("the trend only rises", "the bias is only positive") change
+nothing: they constrain the side that does not matter here.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/figures/sensitivity-dark.png">
@@ -138,11 +143,11 @@ Sources, row counts and SHA-256 hashes of every input file:
 
 ```bash
 make install      # pip install -e ".[dev]"
-make test         # 164 tests, no network needed
+make test         # 181 tests, no network needed
 make demo         # simulation tables
 make data         # download CMS extracts, about 1.5 GB and 45 minutes
 make estimate     # results/estimates.json, about 8 minutes
-make sensitivity  # results/sensitivity.json, Rambachan and Roth bounds, about 1 minute
+make sensitivity  # results/sensitivity.json, Rambachan and Roth bounds, about 6 minutes
 make figures      # docs/figures/
 make provenance   # results/provenance.json
 ```
@@ -165,7 +170,7 @@ src/rxinc/
   drugpanel.py    prescriber-drug-year DGP: four targeting regimes, dynamic and cohort effects
   estimators.py   OLS, two-way FE, DiD, ITS, k-way triple difference, pooled and cohort event studies
   diagnostics.py  pre-trend test, placebo, balance, trend adjustment, Monte Carlo
-  sensitivity.py  Rambachan and Roth smoothness bounds and breakdown values
+  sensitivity.py  Rambachan and Roth bounds: smoothness, shape and sign restrictions
   crosswalk.py    brand families across Part D and Open Payments
   drugdata.py     CMS extracts to the estimation panel, coverage-aware
   datasets.py     CMS clients, robust to catalog layout changes
@@ -176,9 +181,10 @@ docs/             results, problem, approach, related work, methods, data, simul
 
 ## Limitations
 
-- **Adoption is only partly robust.** Whether physicians start prescribing a
-  drug fails its pre-trend test; reps target early adopters. Its short-run jump
-  survives some trend bending, not the largest observed.
+- **Adoption rests on an assumption.** Whether physicians start prescribing a
+  drug fails its pre-trend test; reps target early adopters. The short-run
+  effect holds if adoption kept flattening rather than re-accelerating on its own,
+  which is what the pre-payment trend did.
 - **Long-run effects are fragile.** Three or more years after payment, estimates
   rest on straight-line extrapolation of pre-trends.
 - **Not proof of causation for claims either.** Pre-trends pass and the
@@ -189,7 +195,8 @@ docs/             results, problem, approach, related work, methods, data, simul
 - **Suppression** below 11 claims; the intensive margin is conditional on it.
 - **Annual timing** cannot order payment and prescribing within a year.
 - **Peer effects** are proxied by city, far cruder than shared-patient networks;
-  the null result there says little.
+  the null result there says little. Recent shared-patient data exist (CareSet's
+  DocGraph Hop Teaming) but only on request, so they are not used.
 
 ## Sources
 

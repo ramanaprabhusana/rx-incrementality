@@ -136,7 +136,9 @@ effect runs through the relationship more than the transfer.
    +4.1%. Separately, Agha and Zeltzer (2022, AEJ: Policy) measured **peer**
    spillovers worth roughly a quarter of the total effect in anticoagulants.
    A same-city proxy shows nothing here, but a city is far coarser than their
-   shared-patient networks, so this threat is not resolved.
+   shared-patient networks, so this threat is not resolved. Shared-patient data
+   for recent years exist (CareSet's DocGraph Hop Teaming, editions through
+   2022) but only on request, not as a public download.
 3. **Annual periodicity.** Part D is annual, so payments and prescribing within
    the same year cannot be ordered. This genuinely weakens short-run event
    studies and cannot be fixed with these data.

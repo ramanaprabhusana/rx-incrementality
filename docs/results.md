@@ -162,7 +162,7 @@ Breakdown values, physicians:
 | Three years after (t+3) | +3.3% | 0.03 | +3.96 pt | 0.43 |
 | Four years after (t+4) | +0.6%, not significant | 0 | +2.94 pt | 0.20 |
 | **First two years** (headline) | **+3.6%** | **1.02** | **+2.12 pt** | **1.11** |
-| All five years averaged | +3.4% | 0.15 | +3.35 pt | 0.51 |
+| All five years averaged | +3.4% | 0.17 | +3.35 pt | 0.51 |
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="figures/sensitivity-dark.png">
@@ -175,23 +175,61 @@ looking at per-year breakdowns so as not to pick whichever year looked best.
 - **Short-run effects survive bending like that seen just before payments.** For
   both outcomes the first-two-years breakdown (1.02 and 1.11) exceeds the bending
   in the two years before onset (at most 0.68).
-- **Adoption does not survive the largest bending observed.** Four years before
-  onset the adoption trend bent by -1.75, the only statistically significant
-  value, which exceeds its 1.11 breakdown. Only the year-after jump alone (1.76)
-  survives it. That bending was a deceleration, and continued deceleration would
-  if anything enlarge the post-payment effect, but this symmetric bound does not
-  use the sign.
+- **Adoption does not survive the largest bending observed, if bends may go
+  either way.** Four years before onset the adoption trend bent by -1.75, the
+  only bend significant on a two-sided test, which exceeds its 1.11 breakdown.
+  Only the year-after jump alone (1.76) survives it. But every adoption bend was
+  a deceleration, and allowing for that changes the answer: see below.
 - **Long-run effects rest on straight-line extrapolation.** Worst-case bias grows
   with the square of the distance from the reference year, so three and four
   years out the breakdown values fall to 0.03 and 0 for claims. The five-year
   average is fragile for the same reason.
 - Claims' four-years-before bending (-4.92) comes from the 2024 cohort alone and
-  is not statistically significant (SE 2.87).
+  is not significant on a two-sided test (SE 2.87, z = -1.7).
 
-The interval is validated against exact coverage rather than simulation: for any
-allowed violation the estimator is normal with known bias, and coverage is at
-least 95% for every violation tested and exactly 95% at the worst case, which
-confirms the worst-case bias is both correct and attained. See
+### If the trend can only flatten
+
+Symmetric bounds let the trend bend up or down. The pre-period data say which
+way it actually bent, so `rxinc.sensitivity` also supports one-sided
+restrictions, imposed only where the leads do not contradict them:
+
+| Pre-period bends point to | Claims | Adoption | Non-physician claims |
+| --- | --- | --- | --- |
+| Flattening (all bends negative) | **mixed**: one marginal bend from the noisiest lead, the two precise ones the other way | **supported**: all three negative, -1.75 significant | consistent, not supported |
+| Steepening | contradicted | contradicted | consistent, not supported |
+| Rising trend | supported | supported | consistent, not supported |
+| Falling trend | contradicted | contradicted | consistent, not supported |
+
+| First two years after payment | Claims | Adoption | Non-physician claims |
+| --- | ---: | ---: | ---: |
+| Breakdown, bends either way | 1.02 | 1.11 | 0.75 |
+| Breakdown, trend can only flatten | never | **never** | never |
+| Lowest lower limit at any M, can only flatten | +2.05% | **+1.67 pt** | +1.34% |
+| Breakdown, trend can only rise | 1.02 | 1.11 | 0.75 |
+| Breakdown, bias can only be positive | 1.02 | 1.11 | 0.75 |
+
+*Breakdown values searched up to M = 50 points per year squared.*
+
+- **The supported restriction settles adoption.** If the adoption trend could
+  only keep flattening, as it did before payments, the first-two-years effect is
+  at least +1.67 points at every M: no amount of flattening overturns it. A
+  flattening trend lies below its straight-line projection, so the
+  counterfactual can only fall further below the observed path. The assumption
+  is that adoption did not re-accelerate on its own just when payments started.
+- **Claims cannot lean on it.** The case for flattening there rests on a single
+  marginal bend from the 2024 cohort alone, while the two precisely estimated
+  bends point the other way, so the claims result stays at its two-sided
+  breakdown of 1.02.
+- **Sign restrictions change nothing.** "The trend only rises" and "the bias is
+  only positive" are supported or plausible, but they constrain the upper end of
+  the interval, not the lower, so every breakdown value is unchanged. This was
+  expected: a rising trend means the raw estimate overstates the effect, so ruling
+  out a falling one cannot help show the effect is positive.
+
+The intervals are validated against exact coverage rather than simulation, for
+the two-sided bound and for every one-sided restriction: for any allowed
+violation the estimator is normal with known bias, and coverage is at least 95%
+for every violation tested and exactly 95% at the worst case. See
 [methodology.md](methodology.md).
 
 ## Robustness
@@ -303,6 +341,9 @@ pre-trend).
 - **Precise timing.** Annual data cannot order a payment and prescribing within a
   year.
 - **Peer effects.** A city is too crude a network to say anything about them.
+  Shared-patient network data for recent years exist (CareSet's DocGraph Hop
+  Teaming dataset, editions through 2022) but are available only on request, not
+  as a public download, so they are not used here.
 
 Standard errors are clustered by physician, with nested fixed effects excluded
 from the small-sample correction. With 15 families, clustering by drug or
