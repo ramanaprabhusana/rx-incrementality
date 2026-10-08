@@ -1,4 +1,4 @@
-.PHONY: install test demo data estimate figures provenance clean
+.PHONY: install test demo data estimate sensitivity figures provenance clean
 
 install:
 	python3 -m pip install -e ".[dev]"
@@ -16,6 +16,9 @@ data:
 
 estimate:
 	python3 scripts/estimate_real.py
+
+sensitivity:
+	python3 scripts/sensitivity.py
 
 figures:
 	python3 scripts/make_figures.py

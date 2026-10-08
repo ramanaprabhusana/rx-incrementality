@@ -66,9 +66,11 @@ def main() -> None:
                                  "Covered_Recipient_NPI", op_url)})
         print(f"  {y}: hashed")
     est = ROOT / "results" / "estimates.json"
+    sens = ROOT / "results" / "sensitivity.json"
     out = {
         "generated": time.strftime("%Y-%m-%d"),
         "estimates_sha256": sha256(est) if est.exists() else None,
+        "sensitivity_sha256": sha256(sens) if sens.exists() else None,
         "environment": {"python": platform.python_version(), "numpy": np.__version__,
                         "pandas": pd.__version__, "scipy": scipy.__version__,
                         "platform": platform.platform()},
