@@ -133,29 +133,79 @@ $\text{sd}(c)\cdot cv_\alpha(\bar b(c)/\text{sd}(c))$, where $\bar b(c)$ is
 the worst-case bias, a linear program, and $cv_\alpha(b)$ the $1-\alpha$
 quantile of $|N(b,1)|$.
 
-The first implementation chose weights by Nelder-Mead and produced a kink: the
-interval briefly narrowed as M grew, which is impossible at the true optimum and
-would corrupt the breakdown search. It now uses the convex formulation. By LP
-duality, $\bar b(c) \le B$ holds exactly when $c = D'(\lambda^+ - \lambda^-)$
-for some $\lambda^\pm \ge 0$ with $M\,\mathbf{1}'(\lambda^+ + \lambda^-) \le B$,
-so minimising variance subject to a bias budget is a convex quadratic program;
-a one-dimensional search over the budget then gives the shortest interval.
+### Choosing the weights
 
-Validation, in `tests/test_sensitivity.py`:
+The half-length is convex in the free pre-period weights: the bias and standard
+deviation are convex, and $s \cdot cv_\alpha(B/s)$ is jointly convex and
+non-decreasing in both arguments, which `tests/test_sensitivity.py` checks
+numerically. The optimiser exploits this in three steps:
 
-- **Exact coverage.** For any given violation the estimator is normal with
-  known bias, so coverage is computed exactly, not simulated. Across four values
-  of M and 202 violations each, coverage is at least 95%, and exactly 95% at the
-  worst case, so the worst-case bias is correct and attained. An earlier Monte
-  Carlo version of this test returned 92.7% at M = 0 from noise; 3,000 draws gave
-  95.1%.
-- **Monotonicity.** The half-length is non-decreasing over a fine grid of M.
+1. **Minimum achievable bias width**, by a linear program in the weights and the
+   dual variables of both bias programs.
+2. **Minimum variance for each width budget**, by cutting planes on the 4 or 5
+   free weights: whenever the current weights exceed the budget, the extreme
+   violations form a linear constraint, and a small quadratic program is
+   re-solved. Cuts depend only on the restriction, so they are shared across
+   budgets. A one-dimensional search over the budget, anchored at the exact
+   minimum width, picks the shortest interval.
+3. **A local polish** from the best candidate, safe because the objective is
+   convex.
+
+Two earlier optimisers failed, and the tests now guard against both. Nelder-Mead
+on the weights stalled and produced an interval that narrowed as M grew, which
+is impossible at the optimum and would corrupt the breakdown search. A quadratic
+program over the dual variables failed whenever the budget stopped binding,
+because the duals then have no unique value: on the claims event study it failed
+at 17 of 24 budgets and missed the optimum by 1.6%. Its general version also had
+a redundant equality, one per bias program, which SLSQP cannot handle, and took
+576 seconds per interval. The current optimiser takes 0.2 to 0.5 seconds, is never
+longer than the dual version by more than five parts in a hundred million, and is
+1.6% shorter where the dual version failed. Only one published number moved: the
+claims five-year-average breakdown, from 0.15 to 0.17.
+
+The bias programs are solved with free variables. Restrictions that leave the
+slope free admit an unbounded ray along the straight-line direction; trend-removing
+weights are orthogonal to it only to rounding, which occasionally makes the solver
+fail. Only then is the program re-solved inside a box sized to the problem. A
+fixed box of plus or minus 10,000 was tried first and cost about $10^{-12}$ of
+accuracy on every problem, enough for a reported worst-case bias to fall short of
+an attainable one.
+
+### One-sided restrictions
+
+`restricted_ci` adds shape and sign restrictions: the trend can only flatten
+(concave), only steepen (convex), only rise or only fall (Rambachan and Roth's
+monotonicity classes), or the bias can only be positive or negative. These make
+the bias range $[b_{lo}, b_{hi}]$ asymmetric, and the interval becomes
+$[c'\hat\beta - b_{hi} - x\,\text{sd},\; c'\hat\beta - b_{lo} + x\,\text{sd}]$
+with $x$ solving $\Phi(x + w) - \Phi(-x) = 1 - \alpha$, $w = (b_{hi} - b_{lo})/\text{sd}$.
+Its coverage is at least $1-\alpha$ everywhere and exactly $1-\alpha$ at either
+end of the bias range. For a symmetric range it reduces algebraically to the
+fixed-length interval, which the tests confirm to machine precision.
+
+`pre_period_support` decides whether the leads permit a restriction: a
+significant bend of the wrong sign contradicts it; support requires a
+significant bend of the right sign and at least half the point estimates
+agreeing. The middle case, one significant bend while most estimates disagree, is
+reported as mixed rather than as support.
+
+### Validation
+
+In `tests/test_sensitivity.py`:
+
+- **Exact coverage.** For any given violation the estimator is normal with known
+  bias, so coverage is computed exactly, not simulated, for the two-sided bound
+  and for every one-sided restriction. Coverage is at least 95% for every
+  violation tested and exactly 95% at the worst case, so the worst-case bias is
+  correct and attained. An earlier Monte Carlo version returned 92.7% at M = 0
+  from noise; 3,000 draws gave 95.1%.
+- **Monotonicity.** Interval length is non-decreasing in M, two-sided and
+  one-sided.
 - **Optimality.** No random trend-removing weights produce a shorter interval.
-- **Consistency.** At M = 0 the estimate equals straight-line detrending.
-
-Against the earlier local search on the real event studies, the convex version
-is up to 9.1% shorter and never longer by more than solver tolerance
-(7 parts in ten million).
+- **Consistency.** At M = 0 the estimate equals straight-line detrending, and the
+  one-sided construction equals the fixed-length one when symmetric.
+- **Convexity.** The critical-value function is convex and its perspective
+  non-decreasing in the standard deviation.
 
 ## Exposure that is unobserved, not zero
 
