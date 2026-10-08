@@ -182,6 +182,56 @@ def specification(results, theme):
     return path
 
 
+def sensitivity(sens, theme):
+    t = THEMES[theme]
+    fig = plt.figure(figsize=(8, 4.4), dpi=DPI, facecolor=t["surface"])
+    panels = [("physician", "Claims, first two years after first payment", pct, "%",
+               [-4, 0, 4, 8], ["-4%", "0", "+4%", "+8%"], (-6, 10)),
+              ("physician_extensive", "Prescribes at all, first two years", lambda b: 100 * b, " pt",
+               [-2, 0, 2, 4, 6], ["-2", "0", "+2", "+4", "+6"], (-3, 7))]
+    for i, (key, title, conv, _unit, yt, yl, ylim) in enumerate(panels):
+        ax = fig.add_axes([0.08 + i * 0.49, 0.15, 0.40, 0.56])
+        style(ax, t)
+        st = sens["studies"][key]
+        g = st["grid_first_two_years"]
+        ms = [100 * r["m"] for r in g]
+        lo = [conv(r["lower"]) for r in g]
+        hi = [conv(r["upper"]) for r in g]
+        mid = [conv(r["estimate"]) for r in g]
+        ax.fill_between(ms, lo, hi, color=t["s1"], alpha=0.14, linewidth=0, zorder=1)
+        ax.plot(ms, lo, color=t["s1"], linewidth=1.4, zorder=2)
+        ax.plot(ms, hi, color=t["s1"], linewidth=1.4, zorder=2)
+        ax.plot(ms, mid, color=t["s1"], linewidth=2.0, zorder=3)
+        ax.axhline(0, color=t["base"], linewidth=0.8, zorder=1)
+        bd = 100 * st["targets"]["first_two_years"]["breakdown_m"]
+        ax.axvline(bd, color=t["ink2"], linewidth=0.9, zorder=2)
+        # Lower right of the line: clear of both band edges and of the bending ticks.
+        ax.text(bd + 0.06, ylim[0] + 0.1 * (ylim[1] - ylim[0]), f"breakdown\nM = {bd:.2f}",
+                color=t["ink2"], fontsize=8, va="bottom", fontweight="bold")
+        xmax = ms[-1]
+        bends = [abs(100 * b["value"]) for b in st["pre_period_bending"] if abs(100 * b["value"]) <= xmax]
+        for b in bends:
+            ax.plot([b, b], [ylim[0], ylim[0] + (ylim[1] - ylim[0]) * 0.06], color=t["muted"],
+                    linewidth=1.6, zorder=4, solid_capstyle="butt")
+
+        ax.set_xlim(0, xmax)
+        ax.set_ylim(*ylim)
+        ax.set_yticks(yt)
+        ax.set_yticklabels(yl)
+        ax.set_xticks([0, 0.5, 1.0, 1.5, 2.0])
+        ax.set_xticklabels(["0", "0.5", "1.0", "1.5", "2.0"])
+        ax.set_xlabel("Allowed bend in the trend, M (points per year\u00b2)", color=t["ink2"], fontsize=8.5)
+        ax.set_title(title, color=t["ink2"], fontsize=8.5, loc="left", pad=6)
+    header(fig, t, "Short-run effects survive bending like that seen just before payments",
+           "Rambachan and Roth (2023) smoothness bounds. Band: 95% interval for the first two years "
+           "after first payment,\nallowing the pre-existing trend's slope to change by up to M per year. "
+           "Ticks: bending observed before payment.")
+    path = OUT / f"sensitivity-{theme}.png"
+    fig.savefig(path, dpi=DPI, facecolor=t["surface"])
+    plt.close(fig)
+    return path
+
+
 def main() -> None:
     plt.rcParams["font.family"] = ["Helvetica Neue", "Arial", "DejaVu Sans"]
     data = json.loads((ROOT / "results" / "estimates.json").read_text())
@@ -189,6 +239,9 @@ def main() -> None:
     for theme in THEMES:
         print(event_study(data["event_studies"], theme).relative_to(ROOT))
         print(specification(data["estimates"], theme).relative_to(ROOT))
+        sens_path = ROOT / "results" / "sensitivity.json"
+        if sens_path.exists():
+            print(sensitivity(json.loads(sens_path.read_text()), theme).relative_to(ROOT))
 
 
 if __name__ == "__main__":
