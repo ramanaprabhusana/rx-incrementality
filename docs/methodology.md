@@ -120,6 +120,43 @@ analysis under the assumption that the pre-existing trend would have continued
 linearly, not identification. Rambachan and Roth (2023) formalise how far that
 assumption can be relaxed.
 
+## Bounding parallel-trends violations (Rambachan and Roth, 2023)
+
+`rxinc.sensitivity` implements the smoothness restriction $\Delta^{SD}(M)$: the
+differential trend $\delta$ satisfies $\delta_{-1} = 0$ and
+$|\delta_{t+1} - 2\delta_t + \delta_{t-1}| \le M$ for every period. Inference
+uses the fixed-length confidence interval the paper recommends for this class.
+The estimator $c'\hat\beta$ fixes the post-period weights to the target and
+chooses pre-period weights; any straight line through the reference period
+must leave it unbiased. Its half-length is
+$\text{sd}(c)\cdot cv_\alpha(\bar b(c)/\text{sd}(c))$, where $\bar b(c)$ is
+the worst-case bias, a linear program, and $cv_\alpha(b)$ the $1-\alpha$
+quantile of $|N(b,1)|$.
+
+The first implementation chose weights by Nelder-Mead and produced a kink: the
+interval briefly narrowed as M grew, which is impossible at the true optimum and
+would corrupt the breakdown search. It now uses the convex formulation. By LP
+duality, $\bar b(c) \le B$ holds exactly when $c = D'(\lambda^+ - \lambda^-)$
+for some $\lambda^\pm \ge 0$ with $M\,\mathbf{1}'(\lambda^+ + \lambda^-) \le B$,
+so minimising variance subject to a bias budget is a convex quadratic program;
+a one-dimensional search over the budget then gives the shortest interval.
+
+Validation, in `tests/test_sensitivity.py`:
+
+- **Exact coverage.** For any given violation the estimator is normal with
+  known bias, so coverage is computed exactly, not simulated. Across four values
+  of M and 202 violations each, coverage is at least 95%, and exactly 95% at the
+  worst case, so the worst-case bias is correct and attained. An earlier Monte
+  Carlo version of this test returned 92.7% at M = 0 from noise; 3,000 draws gave
+  95.1%.
+- **Monotonicity.** The half-length is non-decreasing over a fine grid of M.
+- **Optimality.** No random trend-removing weights produce a shorter interval.
+- **Consistency.** At M = 0 the estimate equals straight-line detrending.
+
+Against the earlier local search on the real event studies, the convex version
+is up to 9.1% shorter and never longer by more than solver tolerance
+(7 parts in ten million).
+
 ## Exposure that is unobserved, not zero
 
 Open Payments covers non-physician practitioners only from 2021, and never covers
