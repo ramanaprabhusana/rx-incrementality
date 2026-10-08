@@ -11,6 +11,11 @@ avoid choosing whichever single year looks best), and for all years averaged.
 It also records fixed-length confidence intervals over a grid of M for the
 headline target, and the observed bending of the pre-period trend with standard
 errors, which is what M should be judged against.
+
+It then repeats the headline analysis under shape and sign restrictions, but
+only those the pre-period data do not contradict, and records whether the data
+support each one: imposing a restriction the leads argue against would be
+choosing assumptions for their conclusions.
 """
 
 from __future__ import annotations
@@ -26,7 +31,15 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from rxinc.estimators import EventStudyResult  # noqa: E402
-from rxinc.sensitivity import breakdown_m, flci  # noqa: E402
+from rxinc.sensitivity import (  # noqa: E402
+    breakdown_m,
+    flci,
+    pre_period_support,
+    restricted_breakdown,
+    restricted_ci,
+)
+
+RESTRICTED = ("concave", "increasing", "positive_bias")
 
 STUDIES = {
     "physician": "Claims, physicians",
@@ -100,11 +113,37 @@ def main() -> None:
         for name, v in targets.items():
             print(f"  {name:16s} breakdown M x100 = {100 * v['breakdown_m']:5.2f}   "
                   f"M=0: {100 * v['estimate_m0']:+.2f} [{100 * v['lower_m0']:+.2f}, {100 * v['upper_m0']:+.2f}]")
+        support = {rs: pre_period_support(res, rs) for rs in ("concave", "convex", "increasing", "decreasing")}
+        restricted = {}
+        t1 = np.zeros(n_post)
+        t1[min(1, n_post - 1)] = 1.0
+        for rs in RESTRICTED:
+            verdict = support[rs]["verdict"] if rs in support else "not testable from leads"
+            if verdict == "contradicted":
+                restricted[rs] = {"verdict": verdict, "skipped": "contradicted by pre-period data"}
+                continue
+            rgrid = []
+            for row in grid:
+                ci = restricted_ci(res, row["m"], rs, target=first_two)
+                rgrid.append({"m": row["m"], "estimate": ci.estimate, "lower": ci.lower, "upper": ci.upper,
+                              "bias_low": ci.bias_low, "bias_high": ci.bias_high})
+            restricted[rs] = {
+                "verdict": verdict,
+                "breakdown_first_two_years": restricted_breakdown(res, rs, target=first_two, m_max=0.5),
+                "breakdown_year_after": restricted_breakdown(res, rs, target=t1, m_max=0.5),
+                "lowest_lower_limit_on_grid": min(r["lower"] for r in rgrid),
+                "grid_first_two_years": rgrid,
+            }
+            bd = restricted[rs]["breakdown_first_two_years"]
+            print(f"  {rs:13s} [{verdict}] first-two breakdown "
+                  f"{'never (up to M=50)' if np.isinf(bd) else f'{100 * bd:.2f}'}; "
+                  f"lowest lower limit on grid {100 * restricted[rs]['lowest_lower_limit_on_grid']:+.2f}")
         out["studies"][key] = {"label": label, "pre_period_bending": bends,
-                               "targets": targets, "grid_first_two_years": grid}
+                               "targets": targets, "grid_first_two_years": grid,
+                               "shape_support": support, "restricted": restricted}
 
     path = ROOT / "results" / "sensitivity.json"
-    path.write_text(json.dumps(out, indent=2))
+    path.write_text(json.dumps(out, indent=2, default=lambda v: "inf" if v == np.inf else float(v)))
     print(f"\nwrote {path.relative_to(ROOT)}")
 
 
