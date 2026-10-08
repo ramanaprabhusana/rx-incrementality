@@ -22,8 +22,19 @@ treatment.
 **Whether physicians adopt a drug at all is a different story.** Adoption was
 already rising before the first payment: representatives target physicians who
 are starting to prescribe. That margin fails its pre-trend test, so its +2.5
-point estimate is not credible as causal. Net of the pre-existing trend, adoption
-still rises about 3.4 points, a sensitivity bound rather than an estimate.
+point estimate is not credible as a plain causal estimate.
+
+**How much could the trends bend before these results disappear?** Using
+Rambachan and Roth (2023) bounds, the effects in the first two years after
+payment survive the pre-existing trend's slope changing by about 1 point per
+year, more than the trend bent in the two years before payments started. Effects
+three or more years out do not survive any meaningful bending, and adoption does
+not survive the largest bending observed, four years before onset.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/figures/sensitivity-dark.png">
+  <img alt="Confidence bands widening as the allowed bend M grows; the claims band reaches zero at M = 1.02 and the adoption band at M = 1.11" src="docs/figures/sensitivity-light.png" width="760">
+</picture>
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/figures/event-study-dark.png">
@@ -126,13 +137,14 @@ Sources, row counts and SHA-256 hashes of every input file:
 ## Reproduce
 
 ```bash
-make install    # pip install -e ".[dev]"
-make test       # 148 tests, no network needed
-make demo       # simulation tables
-make data       # download CMS extracts, about 1.5 GB and 45 minutes
-make estimate   # results/estimates.json, about 8 minutes
-make figures    # docs/figures/
-make provenance # results/provenance.json
+make install      # pip install -e ".[dev]"
+make test         # 164 tests, no network needed
+make demo         # simulation tables
+make data         # download CMS extracts, about 1.5 GB and 45 minutes
+make estimate     # results/estimates.json, about 8 minutes
+make sensitivity  # results/sensitivity.json, Rambachan and Roth bounds, about 1 minute
+make figures      # docs/figures/
+make provenance   # results/provenance.json
 ```
 
 ```python
@@ -152,19 +164,23 @@ src/rxinc/
   simulate.py     single-outcome panel DGP
   drugpanel.py    prescriber-drug-year DGP: four targeting regimes, dynamic and cohort effects
   estimators.py   OLS, two-way FE, DiD, ITS, k-way triple difference, pooled and cohort event studies
-  diagnostics.py  pre-trend test, placebo, balance, Monte Carlo
+  diagnostics.py  pre-trend test, placebo, balance, trend adjustment, Monte Carlo
+  sensitivity.py  Rambachan and Roth smoothness bounds and breakdown values
   crosswalk.py    brand families across Part D and Open Payments
   drugdata.py     CMS extracts to the estimation panel, coverage-aware
   datasets.py     CMS clients, robust to catalog layout changes
 scripts/          acquisition, estimation, figures, provenance
-results/          estimates.json, provenance.json
+results/          estimates.json, sensitivity.json, provenance.json
 docs/             results, problem, approach, related work, methods, data, simulation
 ```
 
 ## Limitations
 
-- **No causal claim about adoption.** Whether physicians start prescribing a
-  drug fails its pre-trend test; reps target early adopters.
+- **Adoption is only partly robust.** Whether physicians start prescribing a
+  drug fails its pre-trend test; reps target early adopters. Its short-run jump
+  survives some trend bending, not the largest observed.
+- **Long-run effects are fragile.** Three or more years after payment, estimates
+  rest on straight-line extrapolation of pre-trends.
 - **Not proof of causation for claims either.** Pre-trends pass and the
   falsification test nearly passes, but a small residual next-year coefficient
   (+0.006, SE 0.002) shows some anticipatory targeting remains.
@@ -180,6 +196,7 @@ docs/             results, problem, approach, related work, methods, data, simul
 - [Carey, Lieber and Miller (2021), Journal of Public Economics 197](https://doi.org/10.1016/j.jpubeco.2021.104402) ([NBER WP 26751](https://www.nber.org/papers/w26751))
 - [Agha and Zeltzer (2022), American Economic Journal: Economic Policy 14(2)](https://doi.org/10.1257/pol.20200044)
 - [Sun and Abraham (2021), Journal of Econometrics 225(2)](https://doi.org/10.1016/j.jeconom.2020.09.006)
+- [Rambachan and Roth (2023), Review of Economic Studies 90(5)](https://doi.org/10.1093/restud/rdad018)
 - [Annals of Internal Medicine systematic review (2021)](https://doi.org/10.7326/M20-5665)
 - [Open Payments, CMS](https://www.cms.gov/priorities/key-initiatives/open-payments)
 - [Medicare Part D Prescribers by Provider and Drug, CMS](https://data.cms.gov/provider-summary-by-type-of-service/medicare-part-d-prescribers/medicare-part-d-prescribers-by-provider-and-drug)

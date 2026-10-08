@@ -49,14 +49,15 @@ it is unchanged (+4.1%) on pairs above the reporting floor in every year, where
 a payment cannot change who is observed, so selection through the floor is not
 driving it.
 
-**The extensive margin is not credible as a causal estimate.** In the years
-before a physician is first paid about a drug, the probability that they
-prescribe it was already climbing: -4.9, -2.2, -1.3 and -0.4 points at four, three,
-two and one year before the reference year. Representatives target physicians
-who are starting to adopt a drug, which is drug-specific targeting, the one
-pattern this design cannot absorb. Net of a linear projection of that trend,
-adoption still rises about 3.4 points (SE 0.4) after the first payment, which is
-suggestive but rests on the trend continuing linearly.
+**The extensive margin is not credible as a plain causal estimate.** In the
+years before a physician is first paid about a drug, the probability that they
+prescribe it was already climbing: -4.9, -2.2, -1.3 and -0.4 points at four,
+three, two and one year before the reference year. Representatives target
+physicians who are starting to adopt a drug, which is drug-specific targeting,
+the one pattern this design cannot absorb. Allowing for that trend with
+Rambachan and Roth bounds, the jump in the first two years after payment
+survives trend bending as large as anything seen in the two years before onset,
+but not the larger bending four years before. See the sensitivity section below.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="figures/event-study-dark.png">
@@ -132,6 +133,66 @@ For claims the adjustment changes little, as it should when pre-trends are flat.
 For adoption the leads flatten toward onset, which suggests adoption was
 saturating; if so, a straight-line projection overstates the counterfactual trend
 and the adjusted figures lean conservative.
+
+## How far can parallel trends fail before the results do?
+
+A pre-trend test cannot prove parallel trends. Following Rambachan and Roth
+(2023), `rxinc.sensitivity` instead allows the differential trend to follow any
+straight line through the reference year and lets its slope change by up to
+**M** per year, then reports a 95% fixed-length confidence interval that holds
+under every such violation. The **breakdown value** is the largest M at which the
+interval still excludes zero. `make sensitivity` reproduces this from the saved
+event-study covariances in `results/sensitivity.json`.
+
+M is judged against how much the pre-payment trend itself bent:
+
+| Pre-period bending (points per year squared) | Claims | Adoption |
+| --- | ---: | ---: |
+| Centred two years before onset | +0.14 (SE 1.08) | -0.48 (SE 0.30) |
+| Centred three years before onset | +0.68 (SE 1.66) | -0.06 (SE 0.42) |
+| Centred four years before onset | -4.92 (SE 2.87) | **-1.75 (SE 0.65)** |
+
+Breakdown values, physicians:
+
+| Target | Claims: estimate at M = 0 | Claims: breakdown M | Adoption: estimate at M = 0 | Adoption: breakdown M |
+| --- | ---: | ---: | ---: | ---: |
+| Onset year (t0) | +1.5% | 0.44 | -0.88 pt (a dip) | 0.16 |
+| Year after (t+1) | +5.7% | 1.22 | +5.11 pt | 1.76 |
+| Two years after (t+2) | +5.8% | 0.51 | +5.59 pt | 0.97 |
+| Three years after (t+3) | +3.3% | 0.03 | +3.96 pt | 0.43 |
+| Four years after (t+4) | +0.6%, not significant | 0 | +2.94 pt | 0.20 |
+| **First two years** (headline) | **+3.6%** | **1.02** | **+2.12 pt** | **1.11** |
+| All five years averaged | +3.4% | 0.15 | +3.35 pt | 0.51 |
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="figures/sensitivity-dark.png">
+  <img alt="Confidence bands widening as the allowed bend M grows; the claims band reaches zero at M = 1.02 and the adoption band at M = 1.11" src="figures/sensitivity-light.png" width="760">
+</picture>
+
+The headline target, the first two years after first payment, was chosen before
+looking at per-year breakdowns so as not to pick whichever year looked best.
+
+- **Short-run effects survive bending like that seen just before payments.** For
+  both outcomes the first-two-years breakdown (1.02 and 1.11) exceeds the bending
+  in the two years before onset (at most 0.68).
+- **Adoption does not survive the largest bending observed.** Four years before
+  onset the adoption trend bent by -1.75, the only statistically significant
+  value, which exceeds its 1.11 breakdown. Only the year-after jump alone (1.76)
+  survives it. That bending was a deceleration, and continued deceleration would
+  if anything enlarge the post-payment effect, but this symmetric bound does not
+  use the sign.
+- **Long-run effects rest on straight-line extrapolation.** Worst-case bias grows
+  with the square of the distance from the reference year, so three and four
+  years out the breakdown values fall to 0.03 and 0 for claims. The five-year
+  average is fragile for the same reason.
+- Claims' four-years-before bending (-4.92) comes from the 2024 cohort alone and
+  is not statistically significant (SE 2.87).
+
+The interval is validated against exact coverage rather than simulation: for any
+allowed violation the estimator is normal with known bias, and coverage is at
+least 95% for every violation tested and exactly 95% at the worst case, which
+confirms the worst-case bias is both correct and attained. See
+[methodology.md](methodology.md).
 
 ## Robustness
 
@@ -227,10 +288,11 @@ pre-trend).
 
 ## What these numbers do not support
 
-- **A causal effect on adoption.** The extensive margin fails its pre-trend
-  test: physicians were already moving toward a drug before they were paid
-  about it. The trend-adjusted +3.4 points is a sensitivity bound, not an
-  estimate.
+- **A clean causal effect on adoption.** The extensive margin fails its
+  pre-trend test. Its short-run jump survives bending like that just before
+  payment, but not the largest bending observed in the pre-period.
+- **Effects three or more years out.** Under smoothness bounds they survive
+  almost no departure from a straight-line trend.
 - **Causation beyond doubt, even for claims.** Pre-trends pass and the
   falsification test nearly does, but the residual next-year coefficient
   (+0.006, SE 0.002) shows a little anticipatory targeting remains.

@@ -1,6 +1,7 @@
 {
-  "generated": "2026-10-04",
+  "generated": "2026-10-08",
   "estimates_sha256": "e7bd124f6cfe42c5d83b2272be51dfc1a7a47636be7cf061bf40410e048f484a",
+  "sensitivity_sha256": "47dc6b29e94fbdb819438d582044b7b75de18250f9151971fdfcb6c0ae4b8509",
   "environment": {
     "python": "3.14.6",
     "numpy": "2.4.6",
