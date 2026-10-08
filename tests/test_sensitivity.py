@@ -175,3 +175,154 @@ def test_no_random_trend_removing_weights_beat_the_optimum():
         sd = float(np.sqrt(c @ res.vcov @ c))
         hl = sd * _folded_normal_cv(_max_bias(c, d, m) / sd, 0.05)
         assert hl >= best_hl * (1 - 1e-6)
+
+
+# --------------------------------------------------------------------------
+# Optimiser properties
+# --------------------------------------------------------------------------
+
+
+def test_critical_value_is_convex_and_its_perspective_increases_in_sd():
+    """These make the interval length convex in the weights, which the optimiser relies on."""
+    b = np.linspace(0, 6, 1201)
+    cv = np.array([_folded_normal_cv(x, 0.05) for x in b])
+    assert np.diff(cv, 2).min() > -1e-10
+    slope = np.gradient(cv, b)
+    assert (cv - b * slope).min() > 1.6
+
+
+def test_lopsided_interval_reduces_to_fixed_length_when_symmetric():
+    """B + x(2B/sd) * sd must equal sd * cv(B/sd): the algebra joining the two constructions."""
+    from rxinc.sensitivity import _tight_cv
+    rng = np.random.default_rng(2)
+    for _ in range(200):
+        bias, sd = rng.uniform(0, 0.1), rng.uniform(0.002, 0.05)
+        lopsided = bias + _tight_cv(2 * bias / sd, 0.05) * sd
+        assert lopsided == pytest.approx(sd * _folded_normal_cv(bias / sd, 0.05), rel=1e-9)
+
+
+# --------------------------------------------------------------------------
+# Shape and sign restrictions
+# --------------------------------------------------------------------------
+
+
+def _random_shaped_violation(m, rng, lo, hi, timeline=TIMELINE, ref=-1):
+    """Like _random_violation, with every second difference drawn from [lo, hi]."""
+    n = len(timeline)
+    r = int(np.flatnonzero(timeline == ref)[0])
+    d = rng.uniform(lo, hi, n)
+    g = np.zeros(n - 1)
+    g[r - 1] = rng.normal(0, 0.01)
+    for i in range(r, n - 1):
+        g[i] = g[i - 1] + d[i]
+    for i in range(r - 2, -1, -1):
+        g[i] = g[i + 1] - d[i + 1]
+    path = np.zeros(n)
+    for i in range(r, n - 1):
+        path[i + 1] = path[i] + g[i]
+    for i in range(r - 1, -1, -1):
+        path[i] = path[i + 1] - g[i]
+    lookup = dict(zip(timeline.tolist(), path.tolist(), strict=True))
+    return np.array([lookup[int(t)] for t in REL])
+
+
+@pytest.mark.parametrize("restriction, lo, hi", [
+    ("concave", -1.0, 0.0), ("convex", 0.0, 1.0), ("smooth", -1.0, 1.0),
+])
+@pytest.mark.parametrize("m", [0.002, 0.008])
+def test_exact_coverage_under_shape_restrictions(restriction, lo, hi, m):
+    from scipy.stats import norm
+
+    from rxinc.sensitivity import restricted_ci
+    tau = np.where(REL >= 0, np.array([0.0, 0.0, 0.0, 0.02, 0.04, 0.05, 0.05]), 0.0)
+    truth = float(tau[REL >= 0].mean())
+    ci = restricted_ci(_result(np.zeros(len(REL)), sd=0.01, corr=0.2), m, restriction)
+    rng = np.random.default_rng(1)
+    violations = [_random_shaped_violation(m, rng, lo * m, hi * m) for _ in range(200)]
+    s_ = REL + 1.0
+    violations += [0.006 * s_ + 0.5 * lo * m * s_**2, 0.006 * s_ + 0.5 * hi * m * s_**2]
+    x = (ci.upper - ci.estimate) - (-ci.bias_low)  # lower-side and upper-side quantile multiplier * sd
+    for v in violations:
+        bias = float(ci.weights @ (tau + v)) - truth
+        assert ci.bias_low - 1e-12 <= bias <= ci.bias_high + 1e-12
+        lower_gap, upper_gap = ci.estimate - ci.lower, ci.upper - ci.estimate
+        cov = norm.cdf((upper_gap + bias) / ci.sd) - norm.cdf((-lower_gap + bias) / ci.sd)
+        assert cov >= 0.95 - 1e-9
+    assert x > 0
+
+
+@pytest.mark.parametrize("restriction", ["increasing", "positive_bias", "negative_bias", "decreasing"])
+def test_exact_coverage_under_sign_restrictions(restriction):
+    from scipy.stats import norm
+
+    from rxinc.sensitivity import _polyhedron, restricted_ci
+    m = 0.004
+    tau = np.where(REL >= 0, np.array([0.0, 0.0, 0.0, 0.02, 0.04, 0.05, 0.05]), 0.0)
+    truth = float(tau[REL >= 0].mean())
+    ci = restricted_ci(_result(np.zeros(len(REL)), sd=0.01, corr=0.2), m, restriction)
+    g, h = _polyhedron(REL, -1, m, restriction)
+    rng = np.random.default_rng(4)
+    tested = 0
+    for _ in range(3000):
+        v = _random_violation(m, rng)
+        if np.all(g @ v <= h + 1e-12):
+            tested += 1
+            bias = float(ci.weights @ (tau + v)) - truth
+            assert ci.bias_low - 1e-12 <= bias <= ci.bias_high + 1e-12
+            lower_gap, upper_gap = ci.estimate - ci.lower, ci.upper - ci.estimate
+            cov = norm.cdf((upper_gap + bias) / ci.sd) - norm.cdf((-lower_gap + bias) / ci.sd)
+            assert cov >= 0.95 - 1e-9
+    assert tested >= 20, f"too few random violations satisfied {restriction}"
+
+
+def test_restricted_length_never_shrinks_as_m_grows():
+    from rxinc.sensitivity import restricted_ci
+    res = _realistic()
+    for restriction in ("concave", "increasing"):
+        lengths = [(lambda c: c.upper - c.lower)(restricted_ci(res, m, restriction))
+                   for m in np.linspace(0, 0.03, 13)]
+        assert all(b >= a - 1e-9 for a, b in zip(lengths, lengths[1:], strict=False))
+
+
+def test_concave_lower_limit_is_at_least_the_symmetric_one():
+    """Ruling out upward bends can only raise the lower limit for a positive effect."""
+    from rxinc.sensitivity import flci, restricted_ci
+    res = _realistic()
+    target = [0.5, 0.5, 0.0, 0.0, 0.0]
+    for m in (0.002, 0.01, 0.03):
+        assert restricted_ci(res, m, "concave", target).lower >= flci(res, m, target).lower - 1e-9
+
+
+def test_pre_period_support_verdicts():
+    from rxinc.sensitivity import pre_period_support
+    rel = np.array([-4, -3, -2, 0, 1, 2, 3])
+    # strongly decelerating, precisely estimated leads: concave supported, convex contradicted
+    concave_leads = np.array([-0.09, -0.05, -0.02, 0.0, 0.0, 0.0, 0.0])
+    res = _result(concave_leads, sd=0.002, rel=rel)
+    assert pre_period_support(res, "concave")["verdict"] == "supported"
+    assert pre_period_support(res, "convex")["verdict"] == "contradicted"
+    assert pre_period_support(res, "increasing")["verdict"] == "supported"
+    noisy = _result(np.zeros(len(rel)), sd=0.05, rel=rel)
+    assert pre_period_support(noisy, "concave")["verdict"] == "consistent, not supported"
+    # One significant bend from a noisy early lead, two precise ones the other way,
+    # the pattern in the claims event study: mixed, not supported.
+    rel5 = np.array([-5, -4, -3, -2, 0, 1, 2])
+    vcov = np.diag(np.array([0.03, 0.002, 0.002, 0.002, 0.002, 0.002, 0.002]) ** 2)
+    leads = np.array([-0.12, -0.003, -0.004, -0.0035, 0.0, 0.0, 0.0])
+    lopsided = EventStudyResult(rel5, leads, np.sqrt(np.diag(vcov)), vcov, 1, 1)
+    verdict = pre_period_support(lopsided, "concave")
+    assert sum(v["value"] < 0 for v in verdict["values"]) < len(verdict["values"]) / 2
+    assert verdict["verdict"] == "mixed"
+    assert pre_period_support(noisy, "positive_bias")["verdict"] == "not testable from leads"
+
+
+def test_restricted_breakdown_reports_infinity_when_no_bend_overturns_it():
+    from rxinc.sensitivity import restricted_breakdown
+    res = _result(np.where(REL >= 0, 0.08, 0.0), sd=0.004, corr=0.2)
+    assert restricted_breakdown(res, "concave", m_max=0.2) == np.inf
+
+
+def test_unknown_restriction_rejected():
+    from rxinc.sensitivity import restricted_ci
+    with pytest.raises(ValueError, match="restriction must be one of"):
+        restricted_ci(_realistic(), 0.01, "wiggly")

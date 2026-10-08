@@ -214,6 +214,22 @@ def sensitivity(sens, theme):
             ax.plot([b, b], [ylim[0], ylim[0] + (ylim[1] - ylim[0]) * 0.06], color=t["muted"],
                     linewidth=1.6, zorder=4, solid_capstyle="butt")
 
+        conc = st.get("restricted", {}).get("concave", {})
+        if conc.get("verdict") == "supported":
+            # Only where the pre-period data support it: the trend can only flatten.
+            cg = conc["grid_first_two_years"]
+            cms = [100 * r["m"] for r in cg]
+            ax.plot(cms, [conv(r["lower"]) for r in cg], color=t["s2"], linewidth=2.0, zorder=4)
+            ax.plot(cms, [conv(r["upper"]) for r in cg], color=t["s2"], linewidth=1.4, zorder=4,
+                    linestyle=(0, (1, 0)))
+            handles = [
+                Line2D([], [], color=t["s1"], linewidth=6, alpha=0.3, label="Trend may bend either way"),
+                Line2D([], [], color=t["s2"], linewidth=2.0, label="Trend can only flatten"),
+            ]
+            leg = ax.legend(handles=handles, loc="upper left", frameon=False, fontsize=7.5,
+                            handlelength=1.6, borderaxespad=0.3)
+            for txt in leg.get_texts():
+                txt.set_color(t["ink2"])
         ax.set_xlim(0, xmax)
         ax.set_ylim(*ylim)
         ax.set_yticks(yt)
@@ -223,9 +239,9 @@ def sensitivity(sens, theme):
         ax.set_xlabel("Allowed bend in the trend, M (points per year\u00b2)", color=t["ink2"], fontsize=8.5)
         ax.set_title(title, color=t["ink2"], fontsize=8.5, loc="left", pad=6)
     header(fig, t, "Short-run effects survive bending like that seen just before payments",
-           "Rambachan and Roth (2023) smoothness bounds. Band: 95% interval for the first two years "
-           "after first payment,\nallowing the pre-existing trend's slope to change by up to M per year. "
-           "Ticks: bending observed before payment.")
+           "Rambachan and Roth (2023) bounds: 95% interval for the first two years after first payment, "
+           "allowing the trend's slope\nto change by up to M per year. Ticks: bending observed before "
+           "payment. Orange: adoption if its trend can only flatten, as it did.")
     path = OUT / f"sensitivity-{theme}.png"
     fig.savefig(path, dpi=DPI, facecolor=t["surface"])
     plt.close(fig)
