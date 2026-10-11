@@ -131,7 +131,7 @@ def simulate_panel(config: PanelConfig | None = None) -> pd.DataFrame:
         ``physician_id``, ``period``, ``log_rx``, ``rx_claims``, ``treated``
         (post-onset indicator), ``first_treat_period`` (``-1`` if never
         treated), ``event_time`` (periods since onset, ``NaN`` if never
-        treated), ``ever_treated``, and ``alpha`` -- the physician fixed effect,
+        treated), ``ever_treated``, and ``alpha``, the physician fixed effect,
         which is observable here and *not* observable in real data.  It is
         carried so tests and diagnostics can check whether an estimator is
         merely rediscovering it.

@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-04",
+  "generated": "2026-10-11",
   "sample": 1.0,
   "rounds": {
     "1": "fixed before first full run",
@@ -181,6 +181,18 @@
         "npp": 124700,
         "not_covered": 8951
       }
+    }
+  },
+  "data_quality": {
+    "part_d": {
+      "rows_dropped_invalid_npi": 0
+    },
+    "open_payments": {
+      "rows": 5491153,
+      "dollars": 300814828.74,
+      "rows_blank_npi": 2034,
+      "dollars_blank_npi": 2866621.77,
+      "rows_invalid_npi": 0
     }
   },
   "estimates": [

@@ -142,7 +142,11 @@ straight line through the reference year and lets its slope change by up to
 **M** per year, then reports a 95% fixed-length confidence interval that holds
 under every such violation. The **breakdown value** is the largest M at which the
 interval still excludes zero. `make sensitivity` reproduces this from the saved
-event-study covariances in `results/sensitivity.json`.
+event-study covariances and writes `results/sensitivity.json`.
+
+M is in outcome units per year squared, times 100: log points for claims, which
+at this size are within a few hundredths of percent, and percentage points for
+adoption. Estimates are quoted in percent, as everywhere else on this page.
 
 M is judged against how much the pre-payment trend itself bent:
 
@@ -157,11 +161,11 @@ Breakdown values, physicians:
 | Target | Claims: estimate at M = 0 | Claims: breakdown M | Adoption: estimate at M = 0 | Adoption: breakdown M |
 | --- | ---: | ---: | ---: | ---: |
 | Onset year (t0) | +1.5% | 0.44 | -0.88 pt (a dip) | 0.16 |
-| Year after (t+1) | +5.7% | 1.22 | +5.11 pt | 1.76 |
-| Two years after (t+2) | +5.8% | 0.51 | +5.59 pt | 0.97 |
-| Three years after (t+3) | +3.3% | 0.03 | +3.96 pt | 0.43 |
+| Year after (t+1) | +5.9% | 1.22 | +5.11 pt | 1.76 |
+| Two years after (t+2) | +6.0% | 0.51 | +5.59 pt | 0.97 |
+| Three years after (t+3) | +3.4% | 0.03 | +3.96 pt | 0.43 |
 | Four years after (t+4) | +0.6%, not significant | 0 | +2.94 pt | 0.20 |
-| **First two years** (headline) | **+3.6%** | **1.02** | **+2.12 pt** | **1.11** |
+| **First two years** (headline) | **+3.7%** | **1.02** | **+2.12 pt** | **1.11** |
 | All five years averaged | +3.4% | 0.17 | +3.35 pt | 0.51 |
 
 <picture>
@@ -204,7 +208,7 @@ restrictions, imposed only where the leads do not contradict them:
 | --- | ---: | ---: | ---: |
 | Breakdown, bends either way | 1.02 | 1.11 | 0.75 |
 | Breakdown, trend can only flatten | never | **never** | never |
-| Lowest lower limit at any M, can only flatten | +2.05% | **+1.67 pt** | +1.34% |
+| Lowest lower limit at any M, can only flatten | +2.07% | **+1.67 pt** | +1.35% |
 | Breakdown, trend can only rise | 1.02 | 1.11 | 0.75 |
 | Breakdown, bias can only be positive | 1.02 | 1.11 | 0.75 |
 

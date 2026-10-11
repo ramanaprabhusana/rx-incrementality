@@ -220,8 +220,10 @@ missing exposure rather than treating them as unpaid.
 On real data $\tau$ is unknown, so "how biased is this estimator" is
 unanswerable. The simulation supplies a known $\tau$ and a targeting rule you
 control, which converts that unanswerable question into an arithmetic one. The
-panel schema is identical to the one :func:`rxinc.panel.build_panel` produces
-from CMS data, so the same estimator code runs on both.
+estimators take their column names as arguments, so the code that is scored
+against known truth on the simulated physician-by-drug panel
+(`rxinc.drugpanel`) is the same code that runs on the CMS panel
+(`rxinc.drugdata`).
 
 Claims about bias are made from `monte_carlo`, which repeats the exercise over
 fresh seeds. A single panel cannot distinguish bias from sampling noise, an

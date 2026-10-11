@@ -9,9 +9,9 @@ prescribing volume), averaged over 40 replications.
 | Estimator | Mean estimate | Mean bias | RMSE | 95% coverage |
 | --- | ---: | ---: | ---: | ---: |
 | Naive pooled OLS | 0.0921 | +0.0421 | 0.0562 | 78% |
-| Two-way fixed effects | 0.0484 | −0.0016 | 0.0125 | 93% |
-| DiD vs never-treated | 0.0481 | −0.0019 | 0.0170 | 88% |
-| ITS level change | 0.0476 | −0.0024 | 0.0141 | 93% |
+| Two-way fixed effects | 0.0484 | -0.0016 | 0.0125 | 93% |
+| DiD vs never-treated | 0.0481 | -0.0019 | 0.0170 | 88% |
+| ITS level change | 0.0476 | -0.0024 | 0.0141 | 93% |
 
 Everything except naive OLS recovers the truth. Naive OLS is biased *even
 under random assignment*, because payment relationships accumulate over time
@@ -24,8 +24,8 @@ before confounding enters the picture.
 | Estimator | Mean estimate | Mean bias | RMSE | 95% coverage |
 | --- | ---: | ---: | ---: | ---: |
 | Naive pooled OLS | 0.6060 | +0.5560 | 0.5575 | 0% |
-| Two-way fixed effects | 0.0495 | −0.0005 | 0.0099 | 100% |
-| DiD vs never-treated | 0.0482 | −0.0018 | 0.0148 | 95% |
+| Two-way fixed effects | 0.0495 | -0.0005 | 0.0099 | 100% |
+| DiD vs never-treated | 0.0482 | -0.0018 | 0.0148 | 95% |
 | ITS level change | 0.0510 | +0.0010 | 0.0128 | 100% |
 
 When industry targets persistently high-volume prescribers, the naive estimate
@@ -41,7 +41,7 @@ This is the reassuring case, and it is the one most commonly assumed.
 | --- | ---: | ---: | ---: | ---: |
 | Naive pooled OLS | 0.6117 | +0.5617 | 0.5628 | 0% |
 | Two-way fixed effects | 0.0984 | +0.0484 | 0.0499 | 0% |
-| DiD vs never-treated | −0.0065 | −0.0565 | 0.0585 | 0% |
+| DiD vs never-treated | -0.0065 | -0.0565 | 0.0585 | 0% |
 | ITS level change | 0.1104 | +0.0604 | 0.0626 | 0% |
 
 When industry targets physicians whose prescribing is *already rising*, every
@@ -50,7 +50,7 @@ estimator fails, and they fail in different directions:
 - Two-way fixed effects **roughly doubles** the true effect (+0.098 vs +0.050).
 - ITS is similar (+0.110), for the same reason: the pre-onset trend is
   estimated from treated units, so the level shift absorbs a pre-existing rise.
-- DiD against never-treated **erases the effect entirely**, returning −0.007.
+- DiD against never-treated **erases the effect entirely**, returning -0.007.
   It anchors on period $g-1$, which under dynamic targeting is a transitory
   peak; subsequent mean reversion cancels the real effect. This is an
   Ashenfelter dip inverted, selection on a temporary high rather than a
@@ -64,7 +64,7 @@ standard error signals a problem.
 
 What fails silently in the estimates shows up loudly in the diagnostics:
 
-| Regime | Pre-trend test | Placebo (onset −2) | Pre-period growth gap |
+| Regime | Pre-trend test | Placebo (onset -2) | Pre-period growth gap |
 | --- | --- | ---: | ---: |
 | `none` | PASS (p = 0.13) | +0.018, CI includes 0 | ~0.000 |
 | `static` | PASS (p = 0.17) | +0.020, CI includes 0 | +0.004 |
@@ -146,8 +146,11 @@ one Monte Carlo standard error of zero.
   visible, not calibrated to observed manufacturer behaviour. The direction of
   each failure is a property of the design; the magnitudes are not estimates of
   real-world bias.
-- The real-data pipeline is verified against live CMS endpoints and unit-tested
-  on synthetic frames, but a full Open Payments × Part D panel has **not** been
-  built and analysed here. Doing so is the obvious next step.
-- No estimator here solves the dynamic case. Instrumental variables and
-  policy natural experiments, both named by the review, are not implemented.
+- These simulations say which designs can be trusted, not what the effect is.
+  The real-data estimates, built on the design that survives here, are in
+  [results.md](results.md).
+- No estimator here solves targeting on a physician's rising use of one specific
+  drug. It can be detected (the pre-trend test) and bounded (Rambachan and Roth,
+  2023), which is what the real-data analysis does for the adoption margin.
+  Instrumental variables and policy natural experiments, both named by the
+  review, are not implemented.

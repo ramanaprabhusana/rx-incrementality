@@ -1,7 +1,7 @@
 """Clients for the two public CMS datasets this analysis runs on.
 
 Both are free, require no API key, and contain no protected health
-information -- they are provider-level aggregates, not patient records.
+information: they are provider-level aggregates, not patient records.
 
 Medicare Part D Prescribers (data.cms.gov)
     Actual dispensed-claim counts by prescriber, by year.  Unlike the
@@ -26,7 +26,6 @@ import urllib.parse
 import urllib.request
 from collections.abc import Iterator
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any
 
 import pandas as pd
@@ -324,83 +323,3 @@ def open_payments_general_distribution(
                         download_url=url,
                     )
     raise LookupError(f"No Open Payments general payment dataset for {year}.")
-
-
-def download_open_payments(
-    year: int, dest_dir: str | Path = "data/raw", timeout: int = DEFAULT_TIMEOUT
-) -> Path:
-    """Stream a year of Open Payments general payments to disk.
-
-    These files are large -- a program year runs to millions of rows and
-    several gigabytes -- so the download streams in chunks and skips work if
-    the file is already present.
-
-    Args:
-        year: Program year.
-        dest_dir: Directory to write into.  Created if absent.
-        timeout: Socket timeout in seconds.
-
-    Returns:
-        Path to the downloaded CSV.
-    """
-    dist = open_payments_general_distribution(year, timeout=timeout)
-    assert dist.download_url is not None
-    dest = Path(dest_dir)
-    dest.mkdir(parents=True, exist_ok=True)
-    target = dest / Path(urllib.parse.urlparse(dist.download_url).path).name
-    if target.exists() and target.stat().st_size > 0:
-        return target
-
-    request = urllib.request.Request(
-        dist.download_url, headers=_headers(accept_json=False)
-    )
-    with urllib.request.urlopen(request, timeout=timeout) as response:
-        with open(target, "wb") as handle:
-            while chunk := response.read(1 << 20):
-                handle.write(chunk)
-    return target
-
-
-OPEN_PAYMENTS_USE_COLUMNS = [
-    "Covered_Recipient_NPI",
-    "Covered_Recipient_Profile_ID",
-    "Covered_Recipient_First_Name",
-    "Covered_Recipient_Last_Name",
-    "Recipient_State",
-    "Recipient_City",
-    "Total_Amount_of_Payment_USDollars",
-    "Date_of_Payment",
-    "Nature_of_Payment_or_Transfer_of_Value",
-    "Applicable_Manufacturer_or_Applicable_GPO_Making_Payment_Name",
-]
-"""Columns worth reading from the 91-column general payments file.
-
-``Covered_Recipient_NPI`` is present in current program years.  Older years
-predate it, which is why :mod:`rxinc.linkage` keeps a name-and-state fallback.
-"""
-
-
-def load_open_payments_csv(
-    path: str | Path, usecols: list[str] | None = None, chunksize: int | None = None
-) -> pd.DataFrame:
-    """Read a downloaded Open Payments CSV, keeping only useful columns.
-
-    Args:
-        path: Path to the CSV.
-        usecols: Columns to read.  Defaults to
-            :data:`OPEN_PAYMENTS_USE_COLUMNS`.
-        chunksize: If given, read and concatenate in chunks of this size to
-            bound peak memory.
-
-    Returns:
-        DataFrame of payment records.
-    """
-    columns = usecols or OPEN_PAYMENTS_USE_COLUMNS
-    reader_kwargs: dict[str, Any] = {
-        "usecols": lambda c: c in set(columns),
-        "low_memory": False,
-    }
-    if chunksize is None:
-        return pd.read_csv(path, **reader_kwargs)
-    chunks = pd.read_csv(path, chunksize=chunksize, **reader_kwargs)
-    return pd.concat(chunks, ignore_index=True)

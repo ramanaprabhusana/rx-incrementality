@@ -5,8 +5,11 @@ query API caps at 500 rows per request at roughly 18 rows/sec, which makes it
 unusable at this scale. So this streams the CSV over HTTP, filters in flight,
 and never stores the raw file. Peak disk is the filtered output only.
 
-Matched chunks are appended as they are parsed, so an interrupted run leaves
-usable partial output rather than nothing.
+Matched chunks are appended to a ``.part`` file as they are parsed. The file is
+renamed into place only once the whole download has been read, checked against
+the server's Content-Length, so a file that exists is a file that is complete:
+a dropped connection cannot leave a truncated extract that later runs mistake
+for a full year.
 
     python3 scripts/stream_open_payments.py --year 2023 --class diabetes
 """
@@ -82,8 +85,9 @@ def main() -> int:
 
     out = Path(args.out_dir) / f"openpayments_{args.klass}_{args.year}.csv"
     out.parent.mkdir(parents=True, exist_ok=True)
-    if out.exists():
-        out.unlink()
+    part = out.with_name(out.name + ".part")
+    if part.exists():
+        part.unlink()
 
     print(f"year={args.year} class={args.klass} matching=brand-family", flush=True)
     print(f"streaming {url.split('/')[-1]}", flush=True)
@@ -127,7 +131,7 @@ def main() -> int:
 
             hits = chunk[mask]
             if len(hits):
-                hits.to_csv(out, mode="a", index=False, header=not wrote_header)
+                hits.to_csv(part, mode="a", index=False, header=not wrote_header)
                 wrote_header = True
                 matched_total += len(hits)
 
@@ -140,6 +144,18 @@ def main() -> int:
                     f"{elapsed/60:5.1f} min",
                     flush=True,
                 )
+
+    # http.client returns a short read without raising when a connection drops,
+    # so a truncated download would otherwise look like a small, valid year.
+    if reader.total is not None and reader.bytes_read != reader.total:
+        print(f"\nINCOMPLETE year={args.year}: read {reader.bytes_read:,} of {reader.total:,} bytes. "
+              f"Partial output left at {part.name}; re-run to retry.", file=sys.stderr, flush=True)
+        return 1
+    if not wrote_header:
+        print(f"\nNO MATCHES year={args.year}: scanned {scanned:,} rows and none named a target brand.",
+              file=sys.stderr, flush=True)
+        return 1
+    part.replace(out)
 
     elapsed = time.time() - started
     print(

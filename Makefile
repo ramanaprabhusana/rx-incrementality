@@ -1,4 +1,4 @@
-.PHONY: install test demo data estimate sensitivity figures provenance clean
+.PHONY: install test demo data reproduce estimate sensitivity figures provenance clean
 
 install:
 	python3 -m pip install -e ".[dev]"
@@ -13,6 +13,9 @@ demo:
 data:
 	python3 scripts/fetch_class_panel.py --class diabetes --start 2019 --end 2024
 	./scripts/stream_all_years.sh 2019 2020 2021 2022 2023 2024
+
+# Everything downstream of the data, in dependency order.
+reproduce: estimate sensitivity figures provenance
 
 estimate:
 	python3 scripts/estimate_real.py

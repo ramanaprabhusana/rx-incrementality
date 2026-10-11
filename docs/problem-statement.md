@@ -111,8 +111,9 @@ prescriber panels or patient-level data.
    absent; it can only fail to detect it. Rambachan and Roth bounds then measure
    how much violation each result survives, which turns "the test failed" into a
    graded statement.
-3. **Met.** `make data`, `make estimate`, `make figures`, with input hashes in
-   `results/provenance.json` and CI on three Python versions.
+3. **Met.** `make data` then `make reproduce`, with input hashes in
+   `results/provenance.json`, CI on three Python versions, and a test that
+   fails if a documented number drifts from the results files.
 4. **Met.** [results.md](results.md) closes with what the numbers do not support.
 
 ## Key risk

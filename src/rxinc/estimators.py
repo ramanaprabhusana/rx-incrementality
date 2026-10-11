@@ -346,8 +346,8 @@ def naive_ols(
     """Pooled cross-sectional OLS of outcome on treatment status.
 
     No physician controls, so any persistent difference between paid and unpaid
-    physicians -- specialty, panel size, practice setting, baseline prescribing
-    volume -- is loaded onto the coefficient.
+    physicians (specialty, panel size, practice setting, baseline prescribing
+    volume) is loaded onto the coefficient.
 
     Args:
         frame: Physician-period panel.
@@ -378,7 +378,7 @@ def twoway_fe(
 
     Removes time-invariant confounding.  Two caveats worth stating plainly:
     with staggered adoption it draws comparisons from already-treated
-    physicians, and it cannot touch confounders that move over time -- which is
+    physicians, and it cannot touch confounders that move over time, which is
     exactly what dynamic targeting is.
 
     Args:

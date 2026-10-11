@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-08",
+  "generated": "2026-10-11",
   "restriction": "Delta^SD(M): slope of the differential trend changes by at most M per year",
   "method": "fixed-length confidence interval, Rambachan and Roth (2023)",
   "headline_target": "average of the first two post-payment years (t0, t+1)",

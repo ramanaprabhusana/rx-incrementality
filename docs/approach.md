@@ -1,9 +1,11 @@
 # Approach
 
-## Why the current estimators are not enough
+## Why the standard estimators are not enough
 
-Every estimator in `rxinc.estimators` compares **treated physicians to
-untreated physicians**. That is the source of their vulnerability. If a
+The standard designs (`naive_ols`, `twoway_fe`, `did_never_treated` and
+`interrupted_time_series` in `rxinc.estimators`) all compare **treated
+physicians to untreated physicians**. That is the source of their
+vulnerability. If a
 manufacturer engages Dr. X because Dr. X's prescribing is already climbing, no
 amount of physician fixed effects repairs it, because the confounder moves with
 time. The simulation results in [findings.md](findings.md) quantify the damage:
@@ -127,8 +129,11 @@ effect runs through the relationship more than the transfer.
 1. **Drug-specific targeting.** A manufacturer may pay Dr. X about drug A
    precisely because Dr. X's prescribing of drug A specifically is rising. No
    fixed effect here absorbs this. Tested with a cohort event study and a
-   next-year-payment falsification test: pre-trends pass (p = 0.33), and the
-   next-year coefficient is small but not zero (+0.006, SE 0.002).
+   next-year-payment falsification test. For how much physicians prescribe,
+   pre-trends pass (p = 0.33) and the next-year coefficient is small but not
+   zero (+0.006, SE 0.002). For whether they prescribe the drug at all, the
+   pre-trend test fails: this threat is real on that margin, and Rambachan and
+   Roth bounds measure how much of the result survives it.
 2. **Spillover.** Two kinds, and the second is not hypothetical. If engagement
    about drug A suppresses drug B, then B is not a clean control and tau is
    overstated. Tested: payment about another of the same manufacturer's drugs
@@ -163,8 +168,9 @@ cannot be defined before 2019 and Part D years before 2019 are not usable here.
 ## Therapeutic class
 
 Diabetes agents (SGLT2 inhibitors, DPP-4 inhibitors, GLP-1 receptor agonists),
-29 brand families, of which 15 clear the volume threshold used in estimation. Chosen over anticoagulants because six manufacturers compete at
-meaningful volume (Lilly, Novo Nordisk, AstraZeneca, Boehringer Ingelheim,
+29 brand families, of which 15 clear the volume threshold used in estimation.
+Chosen over anticoagulants because six manufacturers compete at meaningful
+volume (Lilly, Novo Nordisk, AstraZeneca, Boehringer Ingelheim,
 Merck, Janssen) rather than two, which yields more independent
 payment-to-product relationships. Anticoagulants reduce in practice to Eliquis
 against Xarelto, with Pradaxa and Savaysa returning 20 and 5 Indiana rows
@@ -181,13 +187,14 @@ class.
 | 1. Scope | Select therapeutic class | Done: diabetes |
 | 2. Acquire Part D | Brand families, 2019 to 2024 | Done: 3,715,046 rows |
 | 3. Acquire payments | Stream and filter by brand family | Done: 5,491,153 records |
-| 4. Link | NPI join | Done |
+| 4. Link | NPI join, every check digit validated | Done: 2,034 records without an NPI counted and excluded |
 | 5. Crosswalk | Brand families on both sides | Done: 28 of 29 families matched |
 | 6. Panel | Prescriber x family x year, coverage-aware | Done: 6,180,734 physician cells |
 | 7. Estimate | Three-way fixed effects | Done: [results.md](results.md) |
 | 8. Validate | Simulated ground truth, four regimes | Done |
+| 9. Stress | Pre-trend tests, then Rambachan and Roth bounds on what survives a failure | Done |
 
-Stage 8 came before believing any real-data number, and then had to be revisited after it. The same
-discipline applied to the existing estimators applies here: prove the design
+Stage 8 came before believing any real-data number, and then had to be
+revisited after it. The discipline is the same throughout: prove the design
 recovers a known effect on simulated data where truth exists, then point it at
 CMS data where it does not.

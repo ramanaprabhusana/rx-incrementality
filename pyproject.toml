@@ -9,6 +9,7 @@ description = "Causal estimators for the effect of pharmaceutical industry payme
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
+authors = [{ name = "Ramana Prabhu Sana" }]
 keywords = ["causal-inference", "health-policy", "commercial-analytics", "open-payments", "medicare-part-d"]
 classifiers = [
     "Intended Audience :: Science/Research",
@@ -23,11 +24,15 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-data = ["requests>=2.31"]
 dev = ["pytest>=7.4", "ruff>=0.5", "matplotlib>=3.7"]
 
 [project.scripts]
 rxinc = "rxinc.cli:main"
+
+[project.urls]
+Repository = "https://github.com/ramanaprabhusana/rx-incrementality"
+Results = "https://github.com/ramanaprabhusana/rx-incrementality/blob/main/docs/results.md"
+Issues = "https://github.com/ramanaprabhusana/rx-incrementality/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]

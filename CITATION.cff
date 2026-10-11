@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "If you use this software or its results, please cite it as below."
+title: "rx-incrementality: industry payments and physician prescribing on public CMS data"
+type: software
+authors:
+  - family-names: Sana
+    given-names: Ramana Prabhu
+repository-code: "https://github.com/ramanaprabhusana/rx-incrementality"
+license: MIT
+version: 0.1.0
+date-released: "2026-10-11"
+keywords:
+  - causal inference
+  - pharmaceutical promotion
+  - Open Payments
+  - Medicare Part D
+  - difference-in-differences
+abstract: >-
+  Estimates the effect of pharmaceutical industry payments on physician
+  prescribing of diabetes drugs from public CMS data for 2019 to 2024, using
+  physician-by-drug, physician-by-year and drug-by-year fixed effects, a cohort
+  event study and Rambachan and Roth sensitivity bounds. Every estimator is
+  first scored against simulated panels with a known true effect.

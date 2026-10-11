@@ -1,10 +1,11 @@
 """Download a therapeutic class panel from Part D by Provider and Drug.
 
-Writes one CSV per data year to ``data/raw/``. Resumable: a year whose file
-already exists and is non-empty is skipped, so an interrupted run can simply be
-restarted.
+Writes one CSV per data year to ``data/raw/``. Resumable: brands already in a
+year's file are skipped and only the gaps are fetched, so an interrupted run, or
+one where a request failed, can simply be restarted. Exits non-zero if any
+brand could not be fetched, so a partial panel is never mistaken for a full one.
 
-    python3 scripts/fetch_class_panel.py --class diabetes --start 2016 --end 2024
+    python3 scripts/fetch_class_panel.py --class diabetes --start 2019 --end 2024
 """
 
 from __future__ import annotations
@@ -71,7 +72,7 @@ def year_of(distribution_title: str) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--class", dest="klass", default="diabetes", choices=sorted(CLASSES))
-    parser.add_argument("--start", type=int, default=2016)
+    parser.add_argument("--start", type=int, default=2019)
     parser.add_argument("--end", type=int, default=2024)
     parser.add_argument("--out-dir", default="data/raw")
     args = parser.parse_args()
@@ -89,6 +90,7 @@ def main() -> int:
     print(f"class={args.klass} brands={len(brands)} years={years}", flush=True)
 
     grand_total = 0
+    failures: list[str] = []
     for year in years:
         target = out_dir / f"{args.klass}_dy{year}.csv"
         existing = None
@@ -112,6 +114,7 @@ def main() -> int:
                 frame = fetch_part_d(by_year[year], {"Brnd_Name": brand}, max_rows=None)
             except Exception as exc:  # noqa: BLE001
                 print(f"[{year}] {brand}: FAILED {type(exc).__name__}: {exc}", flush=True)
+                failures.append(f"{year} {brand}")
                 continue
             if len(frame):
                 frame["therapeutic_class"] = brand_to_class[brand]
@@ -120,6 +123,9 @@ def main() -> int:
                 added += len(frame)
                 print(f"[{year}]   + {brand:16s} {len(frame):>7,} rows", flush=True)
 
+        if not frames:
+            print(f"[{year}] nothing fetched", flush=True)
+            continue
         panel = pd.concat(frames, ignore_index=True)
         panel.to_csv(target, index=False)
         grand_total += len(panel)
@@ -131,6 +137,10 @@ def main() -> int:
             flush=True,
         )
 
+    if failures:
+        print(f"\nINCOMPLETE. {len(failures)} request(s) failed: {', '.join(failures)}. "
+              "Re-run to fetch only what is missing.", flush=True)
+        return 1
     print(f"\nDONE. {grand_total:,} rows across {len(years)} years.", flush=True)
     return 0
 

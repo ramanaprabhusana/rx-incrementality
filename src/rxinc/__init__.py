@@ -5,12 +5,15 @@ estimator overstate the effect of pharmaceutical industry payments on
 prescribing, when industry targets physicians who were already prescribing
 heavily or whose prescribing was already rising?
 
-Because that question cannot be settled on observational data alone, the
-headline workflow runs estimators against a simulated panel whose true effect
-is known by construction (:mod:`rxinc.simulate`), and reports the bias of each.
-The real-data pipeline (:mod:`rxinc.datasets`, :mod:`rxinc.linkage`,
-:mod:`rxinc.panel`) builds the equivalent panel from CMS Open Payments and
-Medicare Part D so the same estimators can be pointed at it.
+Because that question cannot be settled on observational data alone, every
+estimator is first run against simulated panels whose true effect is known by
+construction (:mod:`rxinc.simulate`, :mod:`rxinc.drugpanel`), and its bias and
+interval coverage reported. The real-data pipeline (:mod:`rxinc.datasets`,
+:mod:`rxinc.crosswalk`, :mod:`rxinc.drugdata`) then builds a
+physician-by-drug-by-year panel from CMS Open Payments and Medicare Part D, and
+the same estimator code is pointed at it. :mod:`rxinc.diagnostics` and
+:mod:`rxinc.sensitivity` test the parallel-trends assumption and bound what
+happens when it fails.
 """
 
 from rxinc.drugpanel import DrugPanelConfig, simulate_drug_panel

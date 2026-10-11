@@ -16,7 +16,8 @@ from rxinc.drugdata import (
 from rxinc.drugpanel import DrugPanelConfig, simulate_drug_panel
 from rxinc.estimators import triple_diff
 
-P1, P2, NP, RPH = "1111111111", "2222222222", "3333333333", "4444444444"
+# Made-up identifiers, each ending in the check digit a real NPI would carry.
+P1, P2, NP, RPH = "1111111112", "2222222228", "3333333334", "4444444440"
 SLOTS = [f"Name_of_Drug_or_Biological_or_Device_or_Medical_Supply_{i}" for i in range(1, 6)]
 FOOD, SPEAKER = "Food and Beverage", "Compensation for services other than consulting"
 
@@ -223,3 +224,43 @@ def test_pair_always_observed(physicians):
     # P1-Jardiance clears the floor every year; P2-Victoza only in 2020.
     assert panel[(panel.npi == P1) & (panel.family == "JARDIANCE")].pair_always_observed.all()
     assert not panel[(panel.npi == P2) & (panel.family == "VICTOZA")].pair_always_observed.any()
+
+
+def test_npi_check_digit():
+    from rxinc.drugdata import is_valid_npi
+    # 1234567893 is the worked example in the CMS check digit specification.
+    assert is_valid_npi("1234567893") and is_valid_npi(1234567893)
+    assert not is_valid_npi("1234567890")
+    for bad in ("0000000000", "123", "", None, float("nan")):
+        assert not is_valid_npi(bad)
+
+
+def test_fixture_npis_pass_the_check_digit():
+    """The loaders validate, so the fixtures must carry correct check digits."""
+    from rxinc.drugdata import is_valid_npi
+    assert all(is_valid_npi(n) for n in (P1, P2, NP, RPH))
+
+
+def test_loaders_drop_and_count_unlinkable_rows(tmp_path):
+    cols = ["Covered_Recipient_NPI", "Total_Amount_of_Payment_USDollars",
+            "Nature_of_Payment_or_Transfer_of_Value", *SLOTS]
+    rows = [[P1, "10", FOOD, "JARDIANCE"], [None, "5000", SPEAKER, "JARDIANCE"],
+            ["0000000000", "7", FOOD, "JARDIANCE"]]
+    path = tmp_path / "op.csv"
+    pd.DataFrame([r + [None] * (len(cols) - len(r)) for r in rows], columns=cols).to_csv(path, index=False)
+    pay = load_payments({2021: path})
+    q = pay.attrs["quality"]
+    assert q["rows"] == 3 and q["rows_blank_npi"] == 1 and q["rows_invalid_npi"] == 1
+    assert q["dollars_blank_npi"] == pytest.approx(5000.0)
+    assert set(pay["npi"]) == {P1}
+
+
+def test_part_d_loader_drops_and_counts_invalid_npis(tmp_path):
+    df = pd.DataFrame({"Prscrbr_NPI": [P1, "0000000000"], "Brnd_Name": ["Jardiance"] * 2,
+                       "Tot_Clms": [50, 60], "data_year": [2021] * 2, "Prscrbr_Type": ["Internal Medicine"] * 2,
+                       "Prscrbr_City": ["LAFAYETTE"] * 2, "Prscrbr_State_Abrvtn": ["IN"] * 2})
+    path = tmp_path / "pd.csv"
+    df.to_csv(path, index=False)
+    claims, _ = load_part_d([path])
+    assert set(claims["npi"]) == {P1}
+    assert claims.attrs["quality"] == {"rows_dropped_invalid_npi": 1}

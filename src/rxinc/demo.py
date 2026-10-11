@@ -6,7 +6,7 @@ The script simulates three physician panels that differ only in how industry
 chooses whom to pay, applies every estimator in the package to each, and
 reports the bias against the known true effect.  It then runs the diagnostic
 battery, to show that the failure under dynamic targeting is detectable from
-the data alone -- which is the practically useful part, since on real data the
+the data alone. That is the practically useful part, since on real data the
 true effect is exactly what you do not have.
 """
 

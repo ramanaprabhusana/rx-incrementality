@@ -32,6 +32,7 @@ alternative intensity measure.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -55,6 +56,40 @@ _NOT_COVERED_KEYS = (
     "specialist/technologist", "dietitian", "nutrition",
 )
 COVERAGE_START = {"physician": 2013, "npp": 2021}
+
+
+_NPI_PREFIX = "80840"
+
+
+def is_valid_npi(value: object) -> bool:
+    """Check a National Provider Identifier against its Luhn check digit.
+
+    An NPI is ten digits whose last digit is a Luhn check computed over the
+    constant prefix ``80840`` followed by the first nine. Validating catches
+    transcription errors and placeholders such as ``0000000000`` that would
+    otherwise join confidently and wrongly. Across the twelve input files used
+    here every NPI passes, but that is a fact to check, not assume.
+    """
+    if value is None or (isinstance(value, float) and pd.isna(value)):
+        return False
+    digits = re.sub(r"\D", "", str(value))
+    if len(digits) != 10:
+        return False
+    total = 0
+    for index, char in enumerate(reversed(_NPI_PREFIX + digits[:9])):
+        digit = int(char)
+        if index % 2 == 0:
+            digit *= 2
+            if digit > 9:
+                digit -= 9
+        total += digit
+    return (10 - total % 10) % 10 == int(digits[9])
+
+
+def _valid_npi_mask(values: pd.Series) -> pd.Series:
+    """Vectorised :func:`is_valid_npi`, computed once per distinct value."""
+    lookup = {v: is_valid_npi(v) for v in values.dropna().unique()}
+    return values.map(lookup).fillna(False).astype(bool)
 
 
 def coverage_class(prescriber_type: object) -> str:
@@ -116,6 +151,8 @@ def load_part_d(paths: Iterable[str | Path]) -> tuple[pd.DataFrame, pd.DataFrame
         ``(claims, attrs)``. ``claims`` has one row per (npi, family, year)
         with summed ``claims``. ``attrs`` has one row per (npi, year) with
         ``specialty``, ``city`` and ``state`` for peer-group construction.
+        ``claims.attrs["quality"]`` counts rows dropped for an NPI that fails
+        its check digit.
     """
     use = ["Prscrbr_NPI", "Brnd_Name", "Tot_Clms", "Prscrbr_Type",
            "Prscrbr_City", "Prscrbr_State_Abrvtn", "data_year"]
@@ -125,6 +162,9 @@ def load_part_d(paths: Iterable[str | Path]) -> tuple[pd.DataFrame, pd.DataFrame
         for p in paths
     ]
     raw = pd.concat(frames, ignore_index=True)
+    valid = _valid_npi_mask(raw["Prscrbr_NPI"])
+    n_invalid = int((~valid).sum())
+    raw = raw[valid].copy()
     raw["family"] = _family_lookup(raw["Brnd_Name"])
     raw = raw[raw["family"].map(in_class)]
     raw = raw.rename(columns={"Prscrbr_NPI": "npi", "data_year": "year"})
@@ -140,6 +180,7 @@ def load_part_d(paths: Iterable[str | Path]) -> tuple[pd.DataFrame, pd.DataFrame
              city=("Prscrbr_City", "first"),
              state=("Prscrbr_State_Abrvtn", "first"))
     )
+    claims.attrs["quality"] = {"rows_dropped_invalid_npi": n_invalid}
     return claims, attrs
 
 
@@ -156,10 +197,17 @@ def load_payments(paths_by_year: Mapping[int, str | Path]) -> pd.DataFrame:
         the family, unsplit), and the same two restricted to payments other
         than food and beverage, which are mostly speaker fees: under 2% of
         records but about half of all dollars.
+
+        Records with no NPI cannot be linked and are dropped. In the 2019 to
+        2024 diabetes extracts that is about 0.04% of records but nearly 1% of
+        dollars, mostly physicians recorded without an NPI and payments to
+        teaching hospitals. ``payments.attrs["quality"]`` reports the rows and
+        dollars dropped, so the exclusion is counted rather than silent.
     """
     use = ["Covered_Recipient_NPI", "Total_Amount_of_Payment_USDollars",
            "Nature_of_Payment_or_Transfer_of_Value", *PRODUCT_COLS]
     out = []
+    quality = {"rows": 0, "dollars": 0.0, "rows_blank_npi": 0, "dollars_blank_npi": 0.0, "rows_invalid_npi": 0}
     for year, path in paths_by_year.items():
         df = pd.read_csv(path, usecols=lambda c: c in set(use), dtype=str, low_memory=False)
         if "Nature_of_Payment_or_Transfer_of_Value" not in df.columns:
@@ -167,8 +215,15 @@ def load_payments(paths_by_year: Mapping[int, str | Path]) -> pd.DataFrame:
                 f"{path}: missing Nature_of_Payment_or_Transfer_of_Value, needed to "
                 "separate food from speaker and consulting payments"
             )
-        df = df[df["Covered_Recipient_NPI"].fillna("").str.len() > 0].copy()
         df["amount"] = pd.to_numeric(df["Total_Amount_of_Payment_USDollars"], errors="coerce").fillna(0.0)
+        blank = df["Covered_Recipient_NPI"].fillna("").str.len() == 0
+        invalid = ~blank & ~_valid_npi_mask(df["Covered_Recipient_NPI"])
+        quality["rows"] += len(df)
+        quality["dollars"] += float(df["amount"].sum())
+        quality["rows_blank_npi"] += int(blank.sum())
+        quality["dollars_blank_npi"] += float(df.loc[blank, "amount"].sum())
+        quality["rows_invalid_npi"] += int(invalid.sum())
+        df = df[~blank & ~invalid].copy()
         df["record"] = np.arange(len(df))
         df["food"] = df["Nature_of_Payment_or_Transfer_of_Value"].fillna("").eq("Food and Beverage")
         slots = [c for c in PRODUCT_COLS if c in df.columns]
@@ -189,6 +244,7 @@ def load_payments(paths_by_year: Mapping[int, str | Path]) -> pd.DataFrame:
         agg["year"] = int(year)
         out.append(agg)
     pay = pd.concat(out, ignore_index=True).rename(columns={"Covered_Recipient_NPI": "npi"})
+    pay.attrs["quality"] = quality
     return pay
 
 

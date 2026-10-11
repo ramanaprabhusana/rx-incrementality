@@ -127,6 +127,13 @@ def main() -> int:
     t0 = time.time()
     claims, attrs = load_part_d([ROOT / f"data/raw/diabetes_dy{y}.csv" for y in YEARS])
     pay = load_payments({y: ROOT / args.op_dir / f"openpayments_diabetes_{y}.csv" for y in YEARS})
+    # Read before any filtering: what the loaders could not link, counted not hidden.
+    quality = {"part_d": dict(claims.attrs["quality"]), "open_payments": dict(pay.attrs["quality"])}
+    op = quality["open_payments"]
+    print(f"unlinkable payments: {op['rows_blank_npi']:,} of {op['rows']:,} records with no NPI "
+          f"(${op['dollars_blank_npi']:,.0f} of ${op['dollars']:,.0f}); "
+          f"{op['rows_invalid_npi']:,} with an invalid NPI; "
+          f"{quality['part_d']['rows_dropped_invalid_npi']:,} Part D rows with an invalid NPI", flush=True)
     peak = claims.groupby(["family", "year"])["claims"].sum().groupby("family").max()
     families = sorted(peak[peak >= MIN_FAMILY_PEAK_CLAIMS].index)
     print(f"loaded {len(claims):,} claim cells, {len(pay):,} payment cells ({time.time()-t0:.0f}s)", flush=True)
@@ -228,6 +235,7 @@ def main() -> int:
                    "4": "added to address selection through the 11-claim reporting floor"},
         "panels": {k: {kk: (vv.item() if isinstance(vv, (np.integer, np.floating)) else vv)
                        for kk, vv in r.__dict__.items()} for k, r in reports.items()},
+        "data_quality": quality,
         "estimates": RESULTS,
         "event_studies": events,
     }

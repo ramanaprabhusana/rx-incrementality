@@ -5,53 +5,47 @@
 ![license](https://img.shields.io/badge/license-MIT-green)
 
 **Do pharmaceutical payments to physicians still move prescribing in the GLP-1
-era, and how much of the apparent effect is really targeting? Estimated on
-public CMS data for 2019 to 2024, with every design first validated against
-simulated ground truth.**
+era, and how much of the apparent effect is really targeting?** Estimated on
+public CMS data for 2019 to 2024 (Medicare Part D linked to Open Payments,
+diabetes drugs), with every design first validated against simulated ground
+truth.
 
-## Results
+## Findings
 
-Among 71,869 physicians already prescribing a diabetes drug, a payment
-relationship about it is associated with **+4.0%** more Medicare claims for that
-drug (95% CI 3.6 to 4.3%). Controlling for anticipatory targeting gives
-**+2.5%**, so the honest range is about 2.5 to 4.0%. The effect builds from
-+2.0% in the year of first payment to +7.5% two years later, with no trend
-beforehand, and holds (+4.1%) on pairs whose observation cannot depend on
-treatment.
+1. **Payments move prescribing volume, modestly.** Among 71,869 physicians
+   already prescribing a diabetes drug, a payment relationship about it is
+   associated with **+4.0%** more Medicare claims for that drug (95% CI 3.6 to
+   4.3%), or **+2.5%** after controlling for anticipatory targeting.
+2. **Most of the raw association is targeting, not effect.** A comparison
+   without physician-by-drug effects gives +23.6%. About five sixths of that
+   disappears once each physician is compared with themselves on the same drug.
+3. **Published effect sizes hold into the GLP-1 era.** +4.7% for GLP-1 agents,
+   +3.7% for SGLT2 inhibitors, a precise zero for the mature DPP-4 class.
+4. **Whether a physician adopts a drug at all is not cleanly identified.**
+   Adoption was already rising before the first payment. Under the one
+   assumption its own pre-trend supports, the short-run effect is still at least
+   +1.67 points.
 
-**Whether physicians adopt a drug at all is a different story.** Adoption was
-already rising before the first payment: representatives target physicians who
-are starting to prescribe. That margin fails its pre-trend test, so its +2.5
-point estimate is not credible as a plain causal estimate.
-
-**How much could the trends bend before these results disappear?** Using
-Rambachan and Roth (2023) bounds, the effects in the first two years after
-payment survive the pre-existing trend's slope changing by about 1 point per
-year, more than the trend bent in the two years before payments started. Effects
-three or more years out do not survive any meaningful bending.
-
-Adoption's trend only ever flattened before payments. Imposing just that,
-that it could keep flattening but not re-accelerate, the adoption effect in the
-first two years is **at least +1.67 points at every degree of flattening**. Sign
-restrictions ("the trend only rises", "the bias is only positive") change
-nothing: they constrain the side that does not matter here.
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/figures/sensitivity-dark.png">
-  <img alt="Confidence bands widening as the allowed bend M grows; the claims band reaches zero at M = 1.02 and the adoption band at M = 1.11" src="docs/figures/sensitivity-light.png" width="760">
-</picture>
+## Payments and prescribing volume
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/figures/event-study-dark.png">
   <img alt="Left: claims flat before the first payment, rising to about 7.5 percent two years after. Right: the probability of prescribing at all was already rising before the first payment; net of that trend it still rises about 5 points" src="docs/figures/event-study-light.png" width="760">
 </picture>
 
-That is in line with Carey, Lieber and Miller's +2.2% to +5.2% for 2013 to 2015,
-so **published effect sizes roughly hold into the GLP-1 era**: +4.7% for GLP-1
+The effect builds from +2.0% in the year of first payment to +7.5% two years
+later, with no trend beforehand (left panel; joint pre-trend test p = 0.33). It
+holds (+4.1%) on physician-drug pairs above the reporting floor in every year,
+where a payment cannot change who is observed. Controlling for next year's
+payment, which absorbs anticipatory targeting, gives +2.5%, so the honest range
+is about 2.5 to 4.0%.
+
+That range sits beside Carey, Lieber and Miller's +2.2% to +5.2% for 2013 to
+2015, so **published effect sizes roughly hold a decade on**: +4.7% for GLP-1
 agents (+5.9% in 2022 to 2024 excluding Mounjaro), +3.7% for SGLT2 inhibitors, a
-precise zero for the mature DPP-4 class. Specialties respond alike (3.3% to
-5.2%), nurse practitioners and physician assistants like physicians (+3.7%), and
-a $940 speaker fee barely more than a $17 lunch (+4.9% against +4.0%).
+precise zero for DPP-4 inhibitors. Specialties respond alike (3.3% to 5.2%),
+nurse practitioners and physician assistants like physicians (+3.7%), and a $940
+speaker fee barely more than a $17 lunch (+4.9% against +4.0%).
 
 ## Most of the apparent effect is targeting
 
@@ -67,6 +61,32 @@ drug. On annual data the published design also fails the test, and adding
 physician-by-year effects cuts the estimate by a further 45%. That does not
 contradict the published monthly analysis, whose pre-trends are flat; it means
 annual public data need all three sets of fixed effects.
+
+## Adoption, and how fragile each result is
+
+**Whether physicians adopt a drug at all is a different story** (right panel
+above). Adoption was already rising before the first payment: representatives
+target physicians who are starting to prescribe. That margin fails its pre-trend
+test, so its +2.5 point estimate is not credible as a plain causal estimate.
+
+Passing a pre-trend test does not prove parallel trends, and failing one does
+not say how wrong the estimate is. The better question is how much the trends
+could bend before each result disappears. Using
+Rambachan and Roth (2023) bounds, the effects in the first two years after
+payment survive the pre-existing trend's slope changing by about 1 point per
+year, more than the trend bent in the two years before payments started. Effects
+three or more years out do not survive any meaningful bending.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/figures/sensitivity-dark.png">
+  <img alt="Confidence bands widening as the allowed bend M grows; the claims band reaches zero at M = 1.02 and the adoption band at M = 1.11" src="docs/figures/sensitivity-light.png" width="760">
+</picture>
+
+Adoption's trend only ever flattened before payments. Imposing just that, that
+it could keep flattening but not re-accelerate, the adoption effect in the first
+two years is **at least +1.67 points at every degree of flattening** (orange
+line). Sign restrictions ("the trend only rises", "the bias is only positive")
+change nothing: they constrain the side that does not matter here.
 
 Full results, robustness and caveats: **[docs/results.md](docs/results.md)**.
 
@@ -120,9 +140,13 @@ Full accounting: [docs/related-work.md](docs/related-work.md).
 | Source | Grain | Scale |
 | --- | --- | --- |
 | Part D by Provider and Drug | prescriber-drug-year | 3,715,046 rows, 2019 to 2024 |
-| Open Payments, general payments | payment record | 5,491,153 records matched |
+| Open Payments, general payments | payment record | 5,491,153 records naming a diabetes brand |
 
-Public, key-free, no protected health information. Three things the data force:
+Public, key-free, no protected health information. Four things the data force:
+
+- **Linkage.** The two sources join on NPI alone. Every NPI is validated against
+  its check digit (all pass), and the 2,034 payment records with no NPI, 0.04% of
+  records but 0.95% of dollars, are counted rather than silently dropped.
 
 - **Brand families.** Part D splits a brand across pack sizes and devices
   (`Victoza 2-Pak`, `Victoza 3-Pak`); Open Payments reports the brand (`VICTOZA`).
@@ -143,14 +167,18 @@ Sources, row counts and SHA-256 hashes of every input file:
 
 ```bash
 make install      # pip install -e ".[dev]"
-make test         # 181 tests, no network needed
+make test         # unit tests, no network needed
 make demo         # simulation tables
 make data         # download CMS extracts, about 1.5 GB and 45 minutes
+make reproduce    # the four steps below, in order
 make estimate     # results/estimates.json, about 8 minutes
 make sensitivity  # results/sensitivity.json, Rambachan and Roth bounds, about 6 minutes
 make figures      # docs/figures/
 make provenance   # results/provenance.json
 ```
+
+The suite includes `tests/test_docs_match_results.py`, which fails if a number
+quoted in this README or in `docs/results.md` drifts from the results files.
 
 ```python
 from rxinc import simulate_drug_panel, triple_diff
@@ -172,9 +200,12 @@ src/rxinc/
   diagnostics.py  pre-trend test, placebo, balance, trend adjustment, Monte Carlo
   sensitivity.py  Rambachan and Roth bounds: smoothness, shape and sign restrictions
   crosswalk.py    brand families across Part D and Open Payments
-  drugdata.py     CMS extracts to the estimation panel, coverage-aware
+  drugdata.py     CMS extracts to the estimation panel: NPI validation, coverage-aware exposure
   datasets.py     CMS clients, robust to catalog layout changes
-scripts/          acquisition, estimation, figures, provenance
+  demo.py         the simulation tables behind `make demo`
+  cli.py          the `rxinc` command
+scripts/          acquisition, estimation, sensitivity, figures, provenance
+tests/            unit tests, plus a check that the documented numbers match results/
 results/          estimates.json, sensitivity.json, provenance.json
 docs/             results, problem, approach, related work, methods, data, simulation
 ```
