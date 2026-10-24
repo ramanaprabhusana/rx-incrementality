@@ -207,6 +207,24 @@ In `tests/test_sensitivity.py`:
 - **Convexity.** The critical-value function is convex and its perspective
   non-decreasing in the standard deviation.
 
+## From an effect to dollars
+
+The spending effect $\tau_s$ is estimated exactly as the claims effect, with log
+gross Part D spending (`Tot_Drug_Cst`, summed over a brand family) as the
+outcome. In a paid cell observed above the reporting floor with spending
+$C_{ijt}$, spending that would not have happened without the payment is
+$C_{ijt}(1 - e^{-\tau_s})$. Summed over paid cells and divided by every payment
+dollar to the same physicians about the same drugs, that is the Medicare
+spending caused per payment dollar (`payment_value` in
+`scripts/estimate_real.py`, unit-tested on hand-built cells). The naive ratio
+divides all of $\sum C_{ijt}$ by the same dollars, which amounts to assuming
+$\tau_s = \infty$: every prescription a paid physician writes was bought.
+
+Period-specific returns use period-specific effects, each estimated within its
+own three years. The ratio is gross of rebates, Medicare only, excludes the
+cost of the sales visit, and leans low; [results.md](results.md) spells out
+each caveat.
+
 ## Exposure that is unobserved, not zero
 
 Open Payments covers non-physician practitioners only from 2021, and never covers

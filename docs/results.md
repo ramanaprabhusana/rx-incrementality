@@ -296,6 +296,60 @@ does nothing there is not identified here.
 non-physician practitioners respond like physicians: +3.7% overall (95% CI 2.9
 to 4.5%), with a pre-trend test that passes (p = 0.74).
 
+## What a payment dollar buys
+
+Claims say how much prescribing moves; spending says what it is worth. The same
+design with log gross Part D spending on the drug as the outcome gives **+3.7%**
+(95% CI 3.4 to 4.0%), or +2.3% controlling for next year's payment. Its event
+study passes the pre-trend test (p = 0.21) and follows the claims path: +2.3% in
+the year of first payment, +7.6% two years later.
+
+Applying that effect to Medicare's spending in paid physician-drug-years, and
+dividing by every payment dollar to the same physicians about the same drugs:
+
+| | 2019 to 2024 | 2019 to 2021 | 2022 to 2024 |
+| --- | ---: | ---: | ---: |
+| Payments to these physicians about these drugs | $185.0M | $104.8M | $80.2M |
+| Medicare gross spending on the paid drug, in paid years | $29.7B | $9.9B | $19.8B |
+| **Naive: that spending per payment dollar** | **$161** | $95 | $247 |
+| Effect on spending | +3.7% | +0.8% | +4.0% |
+| **Spending caused, per payment dollar** | **$5.76** ($3.54 conservative) | $0.71 | $9.59 |
+
+Spending caused is the gross spending in each paid cell times
+$1 - e^{-\tau}$: what would not have been spent without the payment.
+
+- **The naive ratio overstates the return 28 to 45 times.** It treats every
+  prescription a paid physician writes as bought by the payment, when nearly all
+  of it would have been written anyway. It is the sales-per-payment-dollar
+  arithmetic that circulates in industry and press reports.
+- **The naive ratio climbs from $63 in 2019 to $385 in 2024 for reasons that
+  have nothing to do with persuasion.** Payments to these physicians halved while
+  GLP-1 spending soared. A return that rises as promotion shrinks is measuring
+  the market, not the promotion.
+- **The causal return is a GLP-1-era phenomenon.** In 2019 to 2021 a payment
+  dollar caused about 71 cents of extra Medicare spending; in 2022 to 2024,
+  about $9.59, as a similar lift applied to far more expensive prescribing. The
+  earlier window includes 2020, when in-person detailing largely stopped, and
+  each window has only three years to identify the effect from.
+
+What the number is not:
+
+- **Net revenue.** Part D spending is gross, before the confidential rebates
+  manufacturers pay back. At the 22% average brand rebate Carey, Lieber and
+  Miller assumed (Milliman, for 2016), multiply by 0.78; rebates in these
+  crowded classes may well be larger.
+- **The whole market.** Medicare only; the same physicians' commercial and
+  cash-pay prescribing would add to it.
+- **A return on marketing.** The denominator is payment dollars. The cost of
+  the visit itself, mostly sales representative time, is excluded. Carey, Lieber
+  and Miller's $2.64 per dollar for 2013 to 2015 divides by the full cost of a
+  detailing visit ($213 in 2015 dollars, of which $18 was the payment) and scales
+  Medicare up to the whole market, so it is a different ratio and not directly
+  comparable.
+- **An upper bound.** Effects that persist past the year are not counted, and
+  payments in cells below the reporting floor are counted as cost while any
+  effect there goes unmeasured. Both push the estimate down.
+
 ## Against the published literature
 
 | Study | Period | Setting | Estimate |

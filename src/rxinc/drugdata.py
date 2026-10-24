@@ -149,12 +149,13 @@ def load_part_d(paths: Iterable[str | Path]) -> tuple[pd.DataFrame, pd.DataFrame
 
     Returns:
         ``(claims, attrs)``. ``claims`` has one row per (npi, family, year)
-        with summed ``claims``. ``attrs`` has one row per (npi, year) with
+        with summed ``claims`` and ``cost``, Medicare's gross spending on the
+        drug before manufacturer rebates (missing if the extract lacks it). ``attrs`` has one row per (npi, year) with
         ``specialty``, ``city`` and ``state`` for peer-group construction.
         ``claims.attrs["quality"]`` counts rows dropped for an NPI that fails
         its check digit.
     """
-    use = ["Prscrbr_NPI", "Brnd_Name", "Tot_Clms", "Prscrbr_Type",
+    use = ["Prscrbr_NPI", "Brnd_Name", "Tot_Clms", "Tot_Drug_Cst", "Prscrbr_Type",
            "Prscrbr_City", "Prscrbr_State_Abrvtn", "data_year"]
     frames = [
         pd.read_csv(p, usecols=lambda c: c in set(use), dtype={"Prscrbr_NPI": str},
@@ -169,9 +170,11 @@ def load_part_d(paths: Iterable[str | Path]) -> tuple[pd.DataFrame, pd.DataFrame
     raw = raw[raw["family"].map(in_class)]
     raw = raw.rename(columns={"Prscrbr_NPI": "npi", "data_year": "year"})
 
+    if "Tot_Drug_Cst" not in raw:
+        raw["Tot_Drug_Cst"] = np.nan
     claims = (
-        raw.groupby(["npi", "family", "year"], as_index=False)["Tot_Clms"].sum()
-        .rename(columns={"Tot_Clms": "claims"})
+        raw.groupby(["npi", "family", "year"], as_index=False)
+        .agg(claims=("Tot_Clms", "sum"), cost=("Tot_Drug_Cst", lambda s: s.sum(min_count=1)))
     )
     attrs = (
         raw.sort_values("Tot_Clms", ascending=False)
@@ -364,6 +367,10 @@ def build_drug_panel(
     grid["any_rx"] = grid["claims"].notna().astype(np.int8)
     grid["log_rx"] = np.log(grid["claims"])
     grid["claims"] = grid["claims"].fillna(0.0)
+    if "cost" not in grid:
+        grid["cost"] = np.nan
+    grid["log_cost"] = np.log(grid["cost"].where(grid["cost"] > 0))
+    grid["cost"] = grid["cost"].fillna(0.0)
 
     pay = payments[payments["family"].isin(keep_fams)]
     total_dollars = float(pay["pay_amount"].sum())

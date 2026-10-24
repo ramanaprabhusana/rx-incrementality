@@ -25,6 +25,11 @@ truth.
    Adoption was already rising before the first payment. Under the one
    assumption its own pre-trend supports, the short-run effect is still at least
    +1.67 points.
+5. **A payment dollar buys $3.54 to $5.76 of extra Medicare spending, not
+   $161.** Dividing paid physicians' Medicare spending on the drug by payments
+   gives $161 per dollar, but nearly all of that would have been spent anyway.
+   The real return is concentrated in 2022 to 2024. Gross of rebates, Medicare
+   only.
 
 ## Payments and prescribing volume
 
@@ -61,6 +66,23 @@ drug. On annual data the published design also fails the test, and adding
 physician-by-year effects cuts the estimate by a further 45%. That does not
 contradict the published monthly analysis, whose pre-trends are flat; it means
 annual public data need all three sets of fixed effects.
+
+## The same bias, in dollars
+
+| Per payment dollar, Medicare gross spending | 2019 to 2024 | 2019 to 2021 | 2022 to 2024 |
+| --- | ---: | ---: | ---: |
+| Naive: paid physicians' spending on the drug | $161 | $95 | $247 |
+| Caused by the payment | **$5.76** ($3.54 conservative) | $0.71 | $9.59 |
+
+The naive ratio is the sales-per-payment-dollar arithmetic common in industry
+and press reports. It overstates the return 28 to 45 times, and it climbs from
+$63 in 2019 to $385 in 2024 while payments halved, because it tracks GLP-1
+spending rather than persuasion. The causal figure applies the effect on
+spending (+3.7%, pre-trend test passes) to the spending in paid physician-years.
+It is gross of rebates, covers Medicare only and leaves out the cost of the
+sales visit, so it is not comparable to Carey, Lieber and Miller's $2.64 per
+marketing dollar;
+[docs/results.md](docs/results.md#what-a-payment-dollar-buys) has the caveats.
 
 ## Adoption, and how fragile each result is
 
@@ -171,7 +193,7 @@ make test         # unit tests, no network needed
 make demo         # simulation tables
 make data         # download CMS extracts, about 1.5 GB and 45 minutes
 make reproduce    # the four steps below, in order
-make estimate     # results/estimates.json, about 8 minutes
+make estimate     # results/estimates.json, about 13 minutes
 make sensitivity  # results/sensitivity.json, Rambachan and Roth bounds, about 6 minutes
 make figures      # docs/figures/
 make provenance   # results/provenance.json

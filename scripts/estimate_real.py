@@ -11,6 +11,8 @@ Writes ``results/estimates.json``. Every specification carries a ``round``:
    practitioners from 2021, which moved the primary population to physicians,
    plus robustness checks the documentation had promised but not delivered.
 4. Added to address selection through Part D's 11-claim reporting floor.
+5. Added to translate the effect into dollars: the effect on Medicare
+   spending, and what it implies per payment dollar.
 
 Labelling rounds is the honest substitute for a pre-registration this project
 never had.
@@ -67,7 +69,7 @@ def run(label, frame, outcome, treatment, controls=(), absorb=THREE_WAY,
         "outcome": outcome, "treatment": treatment, "controls": list(controls),
         "coef": est.coef, "se": est.se, "ci_low": est.ci95[0], "ci_high": est.ci95[1],
         "t": est.t_stat, "n_obs": est.n_obs, "n_clusters": est.n_clusters,
-        "pct": pct(est.coef) if outcome == "log_rx" else None,
+        "pct": pct(est.coef) if outcome.startswith("log_") else None,
         "extra": est.extra, "note": note,
     }
     RESULTS.append(row)
@@ -78,6 +80,39 @@ def run(label, frame, outcome, treatment, controls=(), absorb=THREE_WAY,
         if not k.endswith("_se"):
             print(f"  {'':50s}   {k}: {v:+.4f} (se {est.extra[k + '_se']:.4f})", flush=True)
     return est
+
+
+def payment_value(panel, taus: dict[str, float]) -> dict:
+    """Translate effects on spending into Medicare dollars per payment dollar.
+
+    Spending that would not have happened without the payment is
+    ``cost * (1 - exp(-tau))`` in each paid cell observed above the reporting
+    floor. The denominator counts every payment to these physicians about these
+    drugs, including payments in cells below the floor, where any effect goes
+    unmeasured, so the ratio leans low. ``cost`` is Medicare's gross spending,
+    before the confidential rebates manufacturers pay back.
+    """
+    known = panel[panel["exposure_known"]]
+    paid_obs = known[(known["pay_any"] == 1) & (known["any_rx"] == 1)]
+    dollars = float(known["pay_amount"].sum())
+    spend = float(paid_obs["cost"].sum())
+    out = {
+        "payment_dollars": dollars,
+        "payment_dollars_in_observed_cells": float(paid_obs["pay_amount"].sum()),
+        "paid_observed_cells": int(len(paid_obs)),
+        "gross_spending_paid_observed": spend,
+        "naive_per_payment_dollar": spend / dollars,
+        "naive_by_year": {
+            int(y): float(paid_obs.loc[paid_obs["year"] == y, "cost"].sum()
+                          / known.loc[known["year"] == y, "pay_amount"].sum())
+            for y in sorted(known["year"].unique())
+        },
+        "causal": {},
+    }
+    for name, tau in taus.items():
+        caused = float((paid_obs["cost"] * -np.expm1(-tau)).sum())
+        out["causal"][name] = {"tau": tau, "caused_gross_spending": caused, "per_payment_dollar": caused / dollars}
+    return out
 
 
 def event_studies(frame, label, population, rnd, outcome="log_rx", pooled=True):
@@ -94,7 +129,7 @@ def event_studies(frame, label, population, rnd, outcome="log_rx", pooled=True):
         pt = pretrend_test(es)
         print(f"  [{label}] {name}  ({time.time()-t0:.0f}s)", flush=True)
         for r, b, s in zip(es.rel_periods, es.coefs, es.ses, strict=True):
-            shown = f"{pct(b):+5.1f}%" if outcome == "log_rx" else f"{100*b:+5.2f}pt"
+            shown = f"{pct(b):+5.1f}%" if outcome.startswith("log_") else f"{100*b:+5.2f}pt"
             print(f"     t{int(r):+d}: {b:+.4f} (se {s:.4f})  {shown}", flush=True)
         print(f"     {pt}", flush=True)
         dt = detrend_event_study(es)
@@ -226,18 +261,37 @@ def main() -> int:
                                                    outcome="any_rx", pooled=False),
               "npp": event_studies(npp_obs, "non-physician practitioners", "npp", 3)}
 
+    print("\n== 9. What a payment dollar buys ==", flush=True)
+    spend = run("intensive: log gross spending ~ paid", obs, "log_cost", "pay_any", rnd=5)
+    spend_lead = run("intensive: log gross spending ~ paid + next year's payment", obs, "log_cost", "pay_any",
+                     controls=("pay_any_lead",), rnd=5)
+    early, late = phys[phys.year <= 2021], phys[phys.year >= 2022]
+    spend_early = run("log gross spending ~ paid, 2019-2021", early[early.any_rx == 1], "log_cost", "pay_any", rnd=5)
+    spend_late = run("log gross spending ~ paid, 2022-2024", late[late.any_rx == 1], "log_cost", "pay_any", rnd=5)
+    events["physician_spending"] = event_studies(phys[phys.any_rx == 1], "physicians, gross spending", "physician",
+                                                 5, outcome="log_cost", pooled=False)
+    value = {"all_years": payment_value(phys, {"headline": spend.coef, "conservative": spend_lead.coef}),
+             "2019_2021": payment_value(early, {"headline": spend_early.coef}),
+             "2022_2024": payment_value(late, {"headline": spend_late.coef})}
+    for period, v in value.items():
+        causal = ", ".join(f"{k} ${c['per_payment_dollar']:.2f}" for k, c in v["causal"].items())
+        print(f"  {period}: payments ${v['payment_dollars'] / 1e6:,.1f}M; naive ${v['naive_per_payment_dollar']:.0f} "
+              f"per payment dollar; caused {causal}", flush=True)
+
     out = {
         "generated": time.strftime("%Y-%m-%d"),
         "sample": args.sample,
         "rounds": {"1": "fixed before first full run",
                    "2": "added after first full run: fixed-effect comparisons",
                    "3": "added after discovering 2021 coverage of non-physician practitioners",
-                   "4": "added to address selection through the 11-claim reporting floor"},
+                   "4": "added to address selection through the 11-claim reporting floor",
+                   "5": "added to translate the effect into Medicare dollars per payment dollar"},
         "panels": {k: {kk: (vv.item() if isinstance(vv, (np.integer, np.floating)) else vv)
                        for kk, vv in r.__dict__.items()} for k, r in reports.items()},
         "data_quality": quality,
         "estimates": RESULTS,
         "event_studies": events,
+        "payment_value": value,
     }
     path = ROOT / args.out
     path.parent.mkdir(parents=True, exist_ok=True)

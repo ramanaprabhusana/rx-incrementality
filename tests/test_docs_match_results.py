@@ -273,3 +273,54 @@ def test_provenance_describes_the_committed_results(est, docs):
     assert sum(int(f["rows"]) for f in payments) == est["data_quality"]["open_payments"]["rows"]
     claims = [f for f in provenance["files"] if f["dataset"].startswith("Medicare Part D")]
     require(docs, f"{sum(int(f['rows']) for f in claims):,} rows", README)
+
+
+def test_payment_value(est, docs):
+    value = est["payment_value"]
+    every, early, late = value["all_years"], value["2019_2021"], value["2022_2024"]
+
+    def dollars(x: float) -> str:
+        return f"${x:,.0f}"
+
+    head, cons = every["causal"]["headline"], every["causal"]["conservative"]
+    early_caused = early["causal"]["headline"]["per_payment_dollar"]
+    late_caused = late["causal"]["headline"]["per_payment_dollar"]
+    for text in (dollars(every["naive_per_payment_dollar"]), f"${head['per_payment_dollar']:.2f}",
+                 f"${cons['per_payment_dollar']:.2f}", f"${early_caused:.2f}", f"${late_caused:.2f}",
+                 dollars(early["naive_per_payment_dollar"]), dollars(late["naive_per_payment_dollar"])):
+        require(docs, text, BOTH)
+    naive = [dollars(v["naive_per_payment_dollar"]) for v in (every, early, late)]
+    require(docs, f"| **Naive: that spending per payment dollar** | **{naive[0]}** | {naive[1]} | {naive[2]} |",
+            RESULTS)
+    paid = [f"${v['payment_dollars'] / 1e6:.1f}M" for v in (every, early, late)]
+    require(docs, f"| Payments to these physicians about these drugs | {' | '.join(paid)} |", RESULTS)
+    spent = [f"${v['gross_spending_paid_observed'] / 1e9:.1f}B" for v in (every, early, late)]
+    require(docs, f"| {' | '.join(spent)} |", RESULTS)
+    cents = round(100 * early["causal"]["headline"]["per_payment_dollar"])
+    require(docs, f"about {cents} cents", RESULTS)
+
+    ratio_low = every["naive_per_payment_dollar"] / head["per_payment_dollar"]
+    ratio_high = every["naive_per_payment_dollar"] / cons["per_payment_dollar"]
+    require(docs, f"{ratio_low:.0f} to {ratio_high:.0f} times", BOTH)
+    years = every["naive_by_year"]
+    require(docs, f"from {dollars(years['2019'])} in 2019 to {dollars(years['2024'])} in 2024", BOTH)
+    assert years["2024"] > years["2019"] and every["payment_dollars"] > 0
+
+    main = spec(est, "intensive: log gross spending ~ paid")
+    lead = spec(est, "intensive: log gross spending ~ paid + next year's payment")
+    assert main["coef"] == pytest.approx(head["tau"]) and lead["coef"] == pytest.approx(cons["tau"])
+    require(docs, f"**{effect(main)}** (95% CI {pct(main['ci_low']):.1f} to {pct(main['ci_high']):.1f}%), "
+                  f"or {effect(lead)} controlling", RESULTS)
+    require(docs, f"({effect(main)}, pre-trend test passes)", README)
+    split = {"2019-2021": early, "2022-2024": late}
+    rows = {years: spec(est, f"log gross spending ~ paid, {years}") for years in split}
+    for years, row in rows.items():
+        assert row["coef"] == pytest.approx(split[years]["causal"]["headline"]["tau"])
+    require(docs, f"| Effect on spending | {effect(main)} | {effect(rows['2019-2021'])} | "
+                  f"{effect(rows['2022-2024'])} |", RESULTS)
+
+    events = est["event_studies"]["physician_spending"]["cohort (Sun-Abraham)"]
+    by_period = dict(zip(events["rel_periods"], events["coefs"], strict=True))
+    require(docs, f"(p = {events['pretrend_p']:.2f})", RESULTS)
+    require(docs, f"{pct(by_period[0]):+.1f}% in the year of first payment, {pct(by_period[2]):+.1f}% two years later",
+            RESULTS)
