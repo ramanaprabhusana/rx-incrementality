@@ -22,6 +22,8 @@ hard-coded, because CMS reissues dataset UUIDs when it republishes a year.
 from __future__ import annotations
 
 import json
+import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from collections.abc import Iterator
@@ -39,6 +41,8 @@ PART_D_BY_PROVIDER_DRUG_TITLE = "Medicare Part D Prescribers - by Provider and D
 
 DEFAULT_TIMEOUT = 120
 _PAGE_SIZE = 5000
+RETRY_STATUSES = frozenset({429, 500, 502, 503, 504})
+"""HTTP statuses worth retrying: rate limiting and transient server errors."""
 
 USER_AGENT: str | None = None
 """Optional User-Agent override for CMS requests.
@@ -75,25 +79,58 @@ class Distribution:
     year: int | None = None
 
 
-def _get_json(url: str, timeout: int = DEFAULT_TIMEOUT) -> Any:
-    """Fetch and parse JSON from ``url``.
+def _retry_after_seconds(exc: urllib.error.HTTPError) -> float | None:
+    """The server's ``Retry-After`` delay in seconds, when it gives one as a number."""
+    value = exc.headers.get("Retry-After") if exc.headers else None
+    try:
+        return max(0.0, float(value)) if value is not None else None
+    except ValueError:
+        return None
+
+
+def _get_json(url: str, timeout: int = DEFAULT_TIMEOUT, *, retries: int = 7,
+              backoff: float = 2.0) -> Any:
+    """Fetch and parse JSON from ``url``, retrying rate limits and transient failures.
+
+    data.cms.gov answers HTTP 429 when paged requests come too fast. A long
+    Part D brand runs to dozens of pages, so without retries one rejected page
+    would discard the brand's progress for that year. Retries wait for the
+    server's ``Retry-After`` when given, otherwise ``backoff * 2**attempt``
+    seconds: with the defaults, up to about four minutes in all. Five retries
+    (about a minute) were not always enough when fetching the 2024
+    anticoagulant panel.
 
     Args:
         url: Absolute URL.
         timeout: Socket timeout in seconds.
+        retries: Further attempts after the first, for statuses in
+            :data:`RETRY_STATUSES` and for network errors.
+        backoff: Base delay in seconds.
 
     Returns:
         Parsed JSON.
 
     Raises:
-        urllib.error.URLError: On network failure.
-        urllib.error.HTTPError: On a non-2xx response. The Open Payments
-            portal answers 403 to some custom User-Agent strings; see
-            :data:`USER_AGENT`.
+        urllib.error.URLError: On network failure after the last retry.
+        urllib.error.HTTPError: On a non-2xx response that is not retryable, or
+            after the last retry. The Open Payments portal answers 403 to some
+            custom User-Agent strings; see :data:`USER_AGENT`.
     """
     request = urllib.request.Request(url, headers=_headers())
-    with urllib.request.urlopen(request, timeout=timeout) as response:
-        return json.loads(response.read().decode("utf-8"))
+    for attempt in range(retries + 1):
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                return json.loads(response.read().decode("utf-8"))
+        except urllib.error.HTTPError as exc:
+            if exc.code not in RETRY_STATUSES or attempt == retries:
+                raise
+            delay = _retry_after_seconds(exc)
+            time.sleep(backoff * 2**attempt if delay is None else delay)
+        except (urllib.error.URLError, TimeoutError, ConnectionError):
+            if attempt == retries:
+                raise
+            time.sleep(backoff * 2**attempt)
+    raise AssertionError("unreachable")
 
 
 def cms_catalog(timeout: int = DEFAULT_TIMEOUT) -> list[dict[str, Any]]:

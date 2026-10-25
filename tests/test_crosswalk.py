@@ -72,3 +72,15 @@ def test_report_flags_one_sided_families():
     assert status["OZEMPIC"] == "payments_only"
     assert status["Soliqua 100-33"] == "excluded"
     assert status["WIDGETMAB"] == "out_of_class"
+
+
+def test_anticoagulant_families_and_aliases():
+    from rxinc.crosswalk import brand_family, in_class
+    assert brand_family("Eliquis") == "ELIQUIS"
+    assert brand_family("XARELTO 2.5") == "XARELTO"   # strengths drop; units are not expected in these sources
+    for name in ("Warfarin Sodium", "Jantoven", "COUMADIN"):
+        assert brand_family(name) == "WARFARIN"
+    assert in_class("ELIQUIS", "anticoagulant") and not in_class("ELIQUIS", "diabetes")
+    assert in_class("JARDIANCE", "diabetes") and not in_class("JARDIANCE", "anticoagulant")
+    assert in_class("ELIQUIS") and in_class("JARDIANCE")       # any analysed class
+    assert not in_class("LIPITOR", "anticoagulant")

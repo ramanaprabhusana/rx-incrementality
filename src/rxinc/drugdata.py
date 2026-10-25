@@ -141,11 +141,13 @@ def _family_lookup(values: pd.Series) -> pd.Series:
     return values.map(mapping)
 
 
-def load_part_d(paths: Iterable[str | Path]) -> tuple[pd.DataFrame, pd.DataFrame]:
+def load_part_d(paths: Iterable[str | Path], klass: str = "diabetes") -> tuple[pd.DataFrame, pd.DataFrame]:
     """Read Part D class extracts and collapse to brand family.
 
     Args:
         paths: CSVs written by ``scripts/fetch_class_panel.py``.
+        klass: The analysed class (a key of ``crosswalk.CLASS_GROUPS``); rows of
+            other classes are dropped.
 
     Returns:
         ``(claims, attrs)``. ``claims`` has one row per (npi, family, year)
@@ -167,7 +169,7 @@ def load_part_d(paths: Iterable[str | Path]) -> tuple[pd.DataFrame, pd.DataFrame
     n_invalid = int((~valid).sum())
     raw = raw[valid].copy()
     raw["family"] = _family_lookup(raw["Brnd_Name"])
-    raw = raw[raw["family"].map(in_class)]
+    raw = raw[raw["family"].map(lambda fam: in_class(fam, klass))]
     raw = raw.rename(columns={"Prscrbr_NPI": "npi", "data_year": "year"})
 
     if "Tot_Drug_Cst" not in raw:
@@ -187,12 +189,14 @@ def load_part_d(paths: Iterable[str | Path]) -> tuple[pd.DataFrame, pd.DataFrame
     return claims, attrs
 
 
-def load_payments(paths_by_year: Mapping[int, str | Path]) -> pd.DataFrame:
+def load_payments(paths_by_year: Mapping[int, str | Path], klass: str = "diabetes") -> pd.DataFrame:
     """Read Open Payments class extracts and attribute amounts to families.
 
     Args:
         paths_by_year: Program year to CSV written by
             ``scripts/stream_open_payments.py``.
+        klass: The analysed class; products of other classes named on the same
+            record still count toward the equal split, but are not kept.
 
     Returns:
         One row per (npi, family, year) with ``pay_amount`` (split equally
@@ -234,7 +238,7 @@ def load_payments(paths_by_year: Mapping[int, str | Path]) -> pd.DataFrame:
         long = df.melt(id_vars=["record", "Covered_Recipient_NPI", "amount", "n_listed", "food"],
                        value_vars=slots, value_name="product").dropna(subset=["product"])
         long["family"] = _family_lookup(long["product"])
-        long = long[long["family"].map(in_class)]
+        long = long[long["family"].map(lambda fam: in_class(fam, klass))]
         long["share"] = long["amount"] / long["n_listed"]
         # The same family named twice on one record counts once.
         long = long.drop_duplicates(["record", "family"])

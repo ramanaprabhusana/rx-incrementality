@@ -118,6 +118,16 @@ about 45%. That is a statement about annual data, not a criticism of the
 original monthly analysis, whose pre-trends are flat. See
 [results.md](results.md).
 
+**Update, a second class.** Rerunning the design unchanged on anticoagulants,
+Agha and Zeltzer's class, for 2019 to 2024 finds targeting bias even larger, an
+effect about half the diabetes estimate, and no rise after first payment in the
+event study, so the evidence there supports a small association rather than a
+demonstrated effect. That is far below Agha and Zeltzer's estimates for the
+launch years and in line with Annapureddy et al. (American Heart Journal, online
+2025, [doi](https://doi.org/10.1016/j.ahj.2025.07.015)), who found no overall
+association between payments and DOAC prescribing in 2017 registry data. See
+[replication-anticoagulants.md](replication-anticoagulants.md).
+
 ## How to read this repository
 
 As a reproducible open-data replication and extension to a period the

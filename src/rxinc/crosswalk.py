@@ -45,6 +45,21 @@ FAMILY_CLASS: dict[str, str] = {
     "OZEMPIC": "GLP-1", "TRULICITY": "GLP-1", "RYBELSUS": "GLP-1",
     "VICTOZA": "GLP-1", "MOUNJARO": "GLP-1", "BYETTA": "GLP-1",
     "BYDUREON": "GLP-1", "ADLYXIN": "GLP-1",
+    # Oral anticoagulants: the promoted direct oral anticoagulants, and generic
+    # warfarin as the unpromoted alternative they compete with.
+    "ELIQUIS": "DOAC", "XARELTO": "DOAC", "PRADAXA": "DOAC", "SAVAYSA": "DOAC",
+    "WARFARIN": "VKA",
+}
+
+# Therapeutic subclasses analysed together, by the class name the scripts take.
+CLASS_GROUPS: dict[str, frozenset[str]] = {
+    "diabetes": frozenset({"SGLT2", "DPP-4", "GLP-1"}),
+    "anticoagulant": frozenset({"DOAC", "VKA"}),
+}
+
+# Names that normalise to different strings but are one product family.
+FAMILY_ALIASES: dict[str, str] = {
+    "WARFARIN SODIUM": "WARFARIN", "JANTOVEN": "WARFARIN", "COUMADIN": "WARFARIN",
 }
 
 FAMILY_MANUFACTURER: dict[str, str] = {
@@ -60,6 +75,8 @@ FAMILY_MANUFACTURER: dict[str, str] = {
     "TRULICITY": "Lilly", "MOUNJARO": "Lilly",
     "NESINA": "Takeda", "KAZANO": "Takeda", "OSENI": "Takeda",
     "ADLYXIN": "Sanofi",
+    "ELIQUIS": "BMS/Pfizer", "XARELTO": "Janssen", "PRADAXA": "Boehringer Ingelheim",
+    "SAVAYSA": "Daiichi Sankyo", "WARFARIN": "generic",
 }
 
 # Families deliberately outside the comparison set, kept so they are reported
@@ -99,12 +116,22 @@ def brand_family(name: object) -> str | None:
         t for t in re.split(r"\s+", text)
         if t and t not in _VARIANT_TOKENS and not _PUNCT_ONLY.match(t)
     ]
-    return " ".join(tokens) or None
+    family = " ".join(tokens) or None
+    return FAMILY_ALIASES.get(family, family)
 
 
-def in_class(family: str | None) -> bool:
-    """Whether a family belongs to the analysed comparison set."""
-    return family is not None and family in FAMILY_CLASS
+def in_class(family: str | None, klass: str | None = None) -> bool:
+    """Whether a family belongs to the analysed comparison set.
+
+    Args:
+        family: A family key from :func:`brand_family`.
+        klass: A key of :data:`CLASS_GROUPS` (``"diabetes"``,
+            ``"anticoagulant"``) to restrict to one analysis, or ``None`` for
+            any analysed class.
+    """
+    if family is None or family not in FAMILY_CLASS:
+        return False
+    return klass is None or FAMILY_CLASS[family] in CLASS_GROUPS[klass]
 
 
 def crosswalk_report(

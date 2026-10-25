@@ -1,4 +1,4 @@
-"""Record exactly which CMS data produced results/estimates.json.
+"""Record exactly which CMS data produced the results files.
 
 The raw extracts are not committed (about 1.5 GB, and CMS republishes). This
 writes results/provenance.json with, for every input file, the endpoint it came
@@ -29,6 +29,7 @@ from rxinc.datasets import (  # noqa: E402
 )
 
 YEARS = range(2019, 2025)
+CLASSES = ("diabetes", "anticoagulant")
 
 
 def sha256(path: Path) -> str:
@@ -53,24 +54,34 @@ def main() -> None:
     except Exception as exc:  # noqa: BLE001
         print(f"warning: could not reach CMS catalog ({exc}); sources left blank")
         part_d_api = {}
-    files = []
+    op_urls = {}
     for y in YEARS:
-        files.append({"dataset": "Medicare Part D Prescribers by Provider and Drug", "year": y,
-                      **describe(ROOT / f"data/raw/diabetes_dy{y}.csv", "Prscrbr_NPI", part_d_api.get(y))})
         try:
-            op_url = open_payments_general_distribution(y).download_url
+            op_urls[y] = open_payments_general_distribution(y).download_url
         except Exception:  # noqa: BLE001
-            op_url = None
-        files.append({"dataset": "Open Payments general payments (diabetes brand families)", "year": y,
-                      **describe(ROOT / f"data/raw/openpayments_diabetes_{y}.csv",
-                                 "Covered_Recipient_NPI", op_url)})
-        print(f"  {y}: hashed")
+            op_urls[y] = None
+    files = []
+    for klass in CLASSES:
+        part_d = [ROOT / f"data/raw/{klass}_dy{y}.csv" for y in YEARS]
+        payments = [ROOT / f"data/raw/openpayments_{klass}_{y}.csv" for y in YEARS]
+        if not all(p.exists() for p in part_d + payments):
+            print(f"  {klass}: inputs not all present, skipped")
+            continue
+        for y, pd_path, op_path in zip(YEARS, part_d, payments, strict=True):
+            files.append({"dataset": "Medicare Part D Prescribers by Provider and Drug", "class": klass, "year": y,
+                          **describe(pd_path, "Prscrbr_NPI", part_d_api.get(y))})
+            files.append({"dataset": f"Open Payments general payments ({klass} brand families)", "class": klass,
+                          "year": y, **describe(op_path, "Covered_Recipient_NPI", op_urls[y])})
+            print(f"  {klass} {y}: hashed")
     est = ROOT / "results" / "estimates.json"
     sens = ROOT / "results" / "sensitivity.json"
+    replications = {p.stem.removeprefix("replication_"): sha256(p)
+                    for p in sorted((ROOT / "results").glob("replication_*.json"))}
     out = {
         "generated": time.strftime("%Y-%m-%d"),
         "estimates_sha256": sha256(est) if est.exists() else None,
         "sensitivity_sha256": sha256(sens) if sens.exists() else None,
+        "replication_sha256": replications,
         "environment": {"python": platform.python_version(), "numpy": np.__version__,
                         "pandas": pd.__version__, "scipy": scipy.__version__,
                         "platform": platform.platform()},

@@ -26,7 +26,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from rxinc.crosswalk import brand_family, in_class  # noqa: E402
+from rxinc.crosswalk import CLASS_GROUPS, brand_family, in_class  # noqa: E402
 from rxinc.datasets import open_payments_general_distribution  # noqa: E402
 
 PRODUCT_SLOTS = range(1, 6)
@@ -74,7 +74,7 @@ class _CountingReader:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--year", type=int, required=True)
-    parser.add_argument("--class", dest="klass", default="diabetes", choices=["diabetes"])
+    parser.add_argument("--class", dest="klass", default="diabetes", choices=sorted(CLASS_GROUPS))
     parser.add_argument("--chunksize", type=int, default=400_000)
     parser.add_argument("--out-dir", default="data/raw")
     args = parser.parse_args()
@@ -125,7 +125,7 @@ def main() -> int:
                     values = chunk[col]
                     for name in values.dropna().unique():
                         if name not in family_cache:
-                            family_cache[name] = in_class(brand_family(name))
+                            family_cache[name] = in_class(brand_family(name), args.klass)
                     keep = {n for n in values.dropna().unique() if family_cache[n]}
                     mask |= values.isin(keep)
 

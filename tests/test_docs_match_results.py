@@ -19,6 +19,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 README, RESULTS = "README.md", "docs/results.md"
+REPLICATION = "docs/replication-anticoagulants.md"
 BOTH = (README, RESULTS)
 
 
@@ -35,7 +36,8 @@ def sens():
 @pytest.fixture(scope="module")
 def docs():
     # Collapse whitespace so a number is found even where the prose wraps mid-phrase.
-    return {name: re.sub(r"\s+", " ", (ROOT / name).read_text()) for name in (*BOTH, "docs/data-sources.md")}
+    names = (*BOTH, "docs/data-sources.md", REPLICATION)
+    return {name: re.sub(r"\s+", " ", (ROOT / name).read_text()) for name in names}
 
 
 def pct(b: float) -> float:
@@ -265,13 +267,14 @@ def test_provenance_describes_the_committed_results(est, docs):
         digest = hashlib.sha256((ROOT / f"results/{name}.json").read_bytes()).hexdigest()
         assert provenance[f"{name}_sha256"] == digest, f"results/{name}.json changed after `make provenance` last ran"
 
-    payments = [f for f in provenance["files"] if f["dataset"].startswith("Open Payments")]
+    diabetes = [f for f in provenance["files"] if f.get("class", "diabetes") == "diabetes"]
+    payments = [f for f in diabetes if f["dataset"].startswith("Open Payments")]
     assert len(payments) == 6
     for record in payments:
         assert f"| {record['year']} |" in docs["docs/data-sources.md"]
         assert f"| {int(record['rows']):,} |" in docs["docs/data-sources.md"], f"{record['year']}: matched rows differ"
     assert sum(int(f["rows"]) for f in payments) == est["data_quality"]["open_payments"]["rows"]
-    claims = [f for f in provenance["files"] if f["dataset"].startswith("Medicare Part D")]
+    claims = [f for f in diabetes if f["dataset"].startswith("Medicare Part D")]
     require(docs, f"{sum(int(f['rows']) for f in claims):,} rows", README)
 
 
@@ -324,3 +327,97 @@ def test_payment_value(est, docs):
     require(docs, f"(p = {events['pretrend_p']:.2f})", RESULTS)
     require(docs, f"{pct(by_period[0]):+.1f}% in the year of first payment, {pct(by_period[2]):+.1f}% two years later",
             RESULTS)
+
+
+@pytest.fixture(scope="module")
+def rep():
+    return json.loads((ROOT / "results/replication_anticoagulant.json").read_text())
+
+
+def test_replication_anticoagulant(rep, est, docs):
+    def row(label):
+        rows = [r for r in rep["estimates"] if r["spec"] == label]
+        assert len(rows) == 1, label
+        return rows[0]
+
+    panel = rep["panel"]
+    for value in (panel["n_physicians"], panel["n_rows"], panel["n_observed"]):
+        require(docs, f"{value:,}", REPLICATION)
+    require(docs, f"{panel['n_physicians']:,} physicians", README)
+    require(docs, f"| Cells with a payment | {100 * panel['share_paid_cells']:.1f}% |", REPLICATION)
+    require(docs, f"| {len(rep['families'])} | 15 |", REPLICATION)
+    q = rep["data_quality"]["open_payments"]
+    require(docs, f"{q['rows_blank_npi']:,} of {q['rows']:,} records ({100 * q['rows_blank_npi'] / q['rows']:.2f}%)",
+            REPLICATION)
+    require(docs, f"{100 * q['dollars_blank_npi'] / q['dollars']:.2f}% of dollars", REPLICATION)
+
+    main = row("intensive: log claims ~ paid")
+    require(docs, f"| **{effect(main)}** | {interval(main)} | {effect(spec(est, 'intensive: log claims ~ paid'))} |",
+            REPLICATION)
+    require(docs, f"**{effect(main)}**", README)
+    for label, name in (("3-way: all three + next year's payment", "Same, controlling for next year's payment"),
+                        ("intensive, pairs above the floor in every year",
+                         "Same, pairs above the reporting floor every year"),
+                        ("intensive: log gross spending ~ paid", "Medicare gross spending on the drug"),
+                        ("promoted drugs only (excluding warfarin)", "Promoted drugs only, warfarin excluded")):
+        r = row(label)
+        require(docs, f"| {name} | {effect(r)} | {interval(r)} |", REPLICATION)
+    adopt = row("extensive: prescribes at >= 11 claims ~ paid")
+    lo, hi = 100 * adopt["ci_low"], 100 * adopt["ci_high"]
+    require(docs, f"| +{100 * adopt['coef']:.2f} points | {lo:.2f} to {hi:.2f} |", REPLICATION)
+
+    for label, name in (("2-way: physician-year + drug-year", "Physician-year + drug-year"),
+                        ("published: physician-drug + drug-year",
+                         "Physician-drug + drug-year (Carey, Lieber and Miller)"),
+                        ("3-way: all three", "**All three**")):
+        base, lead = row(label), row(f"{label} + next year's payment")["extra"]
+        bold = "**" if name.startswith("**") else ""
+        require(docs, f"| {name} | {bold}{effect(base)}{bold} | "
+                      f"{bold}{lead['pay_any_lead']:+.3f} (SE {lead['pay_any_lead_se']:.3f}){bold} |", REPLICATION)
+    naive, three = row("2-way: physician-year + drug-year"), row("3-way: all three")
+    require(docs, f"{effect(naive)} against {effect(three)}", README)
+    require(docs, f"| Naive comparison (physician-year + drug-year) | {effect(naive)} | "
+                  f"{effect(spec(est, '2-way: physician-year + drug-year'))} |", README)
+    require(docs, f"{pct(naive['coef']) / pct(three['coef']):.0f} times too large", REPLICATION)
+    lead3 = row("3-way: all three + next year's payment")["extra"]["pay_any_lead"]
+    lead3_dm = spec(est, "3-way: all three + next year's payment")["extra"]["pay_any_lead"]
+    require(docs, f"| Next year's payment, all three (should be 0) | {lead3:+.3f} | {lead3_dm:+.3f} |", README)
+
+    food = row("food only vs any non-food (speaker, consulting, travel)")
+    nonfood = food["extra"]
+    se = 100 * nonfood["pay_nonfood_any_se"]
+    require(docs, f"goes with {pct(nonfood['pay_nonfood_any']):+.1f}% (SE {se:.1f}%), "
+                  f"against {effect(food)} for meals only", REPLICATION)
+
+    es = rep["event_studies"]["physician"]["cohort (Sun-Abraham)"]
+    for rel, c in zip(es["rel_periods"], es["coefs"], strict=True):
+        label = f"| {rel:+d} |" if rel > 0 else f"| {rel} |"
+        require(docs, f"{label} {pct(c):+.1f}% |", REPLICATION)
+    require(docs, f"| Joint pre-trend test | p = {es['pretrend_p']:.2f} |", REPLICATION)
+    post = [c for rel, c in zip(es["rel_periods"], es["coefs"], strict=True) if rel >= 0]
+    assert max(post) <= 0.0, "the docs describe the post-payment path as flat or declining"
+
+    v = rep["payment_value"]["all_years"]
+    head, cons = v["causal"]["headline"], v["causal"]["conservative"]
+    require(docs, f"| **${head['per_payment_dollar']:.2f}** (${cons['per_payment_dollar']:.2f} conservative) |",
+            REPLICATION)
+    require(docs, f"| ${head['per_payment_dollar']:.2f} | "
+                  f"${est['payment_value']['all_years']['causal']['headline']['per_payment_dollar']:.2f} |", README)
+    require(docs, f"| **${v['naive_per_payment_dollar']:,.0f}** |", REPLICATION)
+    require(docs, f"| ${v['payment_dollars'] / 1e6:.1f}M |", REPLICATION)
+    require(docs, f"| ${v['gross_spending_paid_observed'] / 1e9:.1f}B |", REPLICATION)
+    ratio = v["naive_per_payment_dollar"] / head["per_payment_dollar"]
+    assert 55 <= ratio <= 65, "the docs say the naive ratio overstates the return 60 times"
+    by_year = v["naive_by_year"]
+    require(docs, f"from ${by_year['2019']:,.0f} in 2019 to ${by_year['2024']:,.0f} in 2024", REPLICATION)
+
+
+def test_provenance_hashes_the_replication():
+    provenance = json.loads((ROOT / "results/provenance.json").read_text())
+    path = ROOT / "results/replication_anticoagulant.json"
+    assert provenance["replication_sha256"]["anticoagulant"] == hashlib.sha256(path.read_bytes()).hexdigest()
+    anticoagulant = [f for f in provenance["files"] if f.get("class") == "anticoagulant"]
+    assert len(anticoagulant) == 12
+    records = {f["year"]: int(f["rows"]) for f in anticoagulant if f["dataset"].startswith("Open Payments")}
+    text = re.sub(r"\s+", " ", (ROOT / REPLICATION).read_text())
+    assert f"{records[2019]:,} Open Payments records naming these brands in 2019 to {records[2024]:,} in 2024" in text

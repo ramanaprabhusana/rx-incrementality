@@ -19,6 +19,7 @@ truth.
 2. **Most of the raw association is targeting, not effect.** A comparison
    without physician-by-drug effects gives +23.6%. About five sixths of that
    disappears once each physician is compared with themselves on the same drug.
+   Blood thinners show the same pattern, more strongly: +43.4% against +1.9%.
 3. **Published effect sizes hold into the GLP-1 era.** +4.7% for GLP-1 agents,
    +3.7% for SGLT2 inhibitors, a precise zero for the mature DPP-4 class.
 4. **Whether a physician adopts a drug at all is not cleanly identified.**
@@ -83,6 +84,26 @@ It is gross of rebates, covers Medicare only and leaves out the cost of the
 sales visit, so it is not comparable to Carey, Lieber and Miller's $2.64 per
 marketing dollar;
 [docs/results.md](docs/results.md#what-a-payment-dollar-buys) has the caveats.
+
+## Does it hold for another class?
+
+The core design, rerun unchanged on oral anticoagulants (Eliquis, Xarelto,
+Pradaxa, warfarin; 106,014 physicians, 2019 to 2024):
+
+| | Anticoagulants | Diabetes |
+| --- | ---: | ---: |
+| Naive comparison (physician-year + drug-year) | +43.4% | +23.6% |
+| All three sets of fixed effects | **+1.9%** | **+4.0%** |
+| Next year's payment, all three (should be 0) | +0.005 | +0.006 |
+| Event study after first payment | flat | rising to +7.5% |
+| Spending caused per payment dollar | $7.70 | $5.76 |
+
+Targeting bias replicates and is larger. The effect does not: it is about half
+the diabetes estimate, and its event study shows no rise after a physician's
+first payment, so for blood thinners the evidence supports a small association,
+not a demonstrated effect. Agha and Zeltzer found about 10% in 2014 to 2016,
+when these drugs were new; promotion may matter most while a class is
+diffusing. Details: [docs/replication-anticoagulants.md](docs/replication-anticoagulants.md).
 
 ## Adoption, and how fragile each result is
 
@@ -188,19 +209,22 @@ Sources, row counts and SHA-256 hashes of every input file:
 ## Reproduce
 
 ```bash
-make install      # pip install -e ".[dev]"
-make test         # unit tests, no network needed
-make demo         # simulation tables
-make data         # download CMS extracts, about 1.5 GB and 45 minutes
-make reproduce    # the four steps below, in order
-make estimate     # results/estimates.json, about 13 minutes
-make sensitivity  # results/sensitivity.json, Rambachan and Roth bounds, about 6 minutes
-make figures      # docs/figures/
-make provenance   # results/provenance.json
+make install             # pip install -e ".[dev]"
+make test                # unit tests, no network needed
+make demo                # simulation tables
+make data                # download CMS extracts, about 1.5 GB and 45 minutes
+make data-anticoagulant  # the replication's extracts, about 1 GB more
+make reproduce           # the five steps below, in order
+make estimate            # results/estimates.json, about 13 minutes
+make sensitivity         # results/sensitivity.json, Rambachan and Roth bounds, about 6 minutes
+make figures             # docs/figures/
+make replicate           # results/replication_anticoagulant.json
+make provenance          # results/provenance.json
 ```
 
 The suite includes `tests/test_docs_match_results.py`, which fails if a number
-quoted in this README or in `docs/results.md` drifts from the results files.
+quoted in this README, `docs/results.md` or `docs/replication-anticoagulants.md`
+drifts from the results files.
 
 ```python
 from rxinc import simulate_drug_panel, triple_diff
@@ -228,8 +252,8 @@ src/rxinc/
   cli.py          the `rxinc` command
 scripts/          acquisition, estimation, sensitivity, figures, provenance
 tests/            unit tests, plus a check that the documented numbers match results/
-results/          estimates.json, sensitivity.json, provenance.json
-docs/             results, problem, approach, related work, methods, data, simulation
+results/          estimates.json, sensitivity.json, replication_anticoagulant.json, provenance.json
+docs/             results, replication, problem, approach, related work, methods, data, simulation
 ```
 
 ## Limitations

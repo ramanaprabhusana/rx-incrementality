@@ -1,7 +1,10 @@
 {
-  "generated": "2026-10-15",
+  "generated": "2026-10-24",
   "estimates_sha256": "6424b8400c70addba864b13c40d7255b08108094370ceb6672fab5a706c273c5",
   "sensitivity_sha256": "b4150c65c56784075e7cfa3691760141b13d88c2f9b165b23dfb2e8f21dd27de",
+  "replication_sha256": {
+    "anticoagulant": "90145170be2e412598af405bdb33b294299554d56c4ec706f7dac6fbfe27e130"
+  },
   "environment": {
     "python": "3.14.6",
     "numpy": "2.4.6",
@@ -12,6 +15,7 @@
   "files": [
     {
       "dataset": "Medicare Part D Prescribers by Provider and Drug",
+      "class": "diabetes",
       "year": 2019,
       "file": "data/raw/diabetes_dy2019.csv",
       "rows": 412793,
@@ -22,6 +26,7 @@
     },
     {
       "dataset": "Open Payments general payments (diabetes brand families)",
+      "class": "diabetes",
       "year": 2019,
       "file": "data/raw/openpayments_diabetes_2019.csv",
       "rows": 948818,
@@ -32,6 +37,7 @@
     },
     {
       "dataset": "Medicare Part D Prescribers by Provider and Drug",
+      "class": "diabetes",
       "year": 2020,
       "file": "data/raw/diabetes_dy2020.csv",
       "rows": 462462,
@@ -42,6 +48,7 @@
     },
     {
       "dataset": "Open Payments general payments (diabetes brand families)",
+      "class": "diabetes",
       "year": 2020,
       "file": "data/raw/openpayments_diabetes_2020.csv",
       "rows": 605241,
@@ -52,6 +59,7 @@
     },
     {
       "dataset": "Medicare Part D Prescribers by Provider and Drug",
+      "class": "diabetes",
       "year": 2021,
       "file": "data/raw/diabetes_dy2021.csv",
       "rows": 519244,
@@ -62,6 +70,7 @@
     },
     {
       "dataset": "Open Payments general payments (diabetes brand families)",
+      "class": "diabetes",
       "year": 2021,
       "file": "data/raw/openpayments_diabetes_2021.csv",
       "rows": 971046,
@@ -72,6 +81,7 @@
     },
     {
       "dataset": "Medicare Part D Prescribers by Provider and Drug",
+      "class": "diabetes",
       "year": 2022,
       "file": "data/raw/diabetes_dy2022.csv",
       "rows": 613524,
@@ -82,6 +92,7 @@
     },
     {
       "dataset": "Open Payments general payments (diabetes brand families)",
+      "class": "diabetes",
       "year": 2022,
       "file": "data/raw/openpayments_diabetes_2022.csv",
       "rows": 1029755,
@@ -92,6 +103,7 @@
     },
     {
       "dataset": "Medicare Part D Prescribers by Provider and Drug",
+      "class": "diabetes",
       "year": 2023,
       "file": "data/raw/diabetes_dy2023.csv",
       "rows": 789268,
@@ -102,6 +114,7 @@
     },
     {
       "dataset": "Open Payments general payments (diabetes brand families)",
+      "class": "diabetes",
       "year": 2023,
       "file": "data/raw/openpayments_diabetes_2023.csv",
       "rows": 999017,
@@ -112,6 +125,7 @@
     },
     {
       "dataset": "Medicare Part D Prescribers by Provider and Drug",
+      "class": "diabetes",
       "year": 2024,
       "file": "data/raw/diabetes_dy2024.csv",
       "rows": 917755,
@@ -122,12 +136,145 @@
     },
     {
       "dataset": "Open Payments general payments (diabetes brand families)",
+      "class": "diabetes",
       "year": 2024,
       "file": "data/raw/openpayments_diabetes_2024.csv",
       "rows": 937276,
       "bytes": 174168844,
       "modified": "2026-10-04T01:12:39",
       "sha256": "b7d6c38724298a005029ba85fa58104e5114d0335fca0b8d2b1a9dd7a2d323be",
+      "source": "https://download.cms.gov/openpayments/PGYR2024_P06302026_06032026/OP_DTL_GNRL_PGYR2024_P06302026_06032026.csv"
+    },
+    {
+      "dataset": "Medicare Part D Prescribers by Provider and Drug",
+      "class": "anticoagulant",
+      "year": 2019,
+      "file": "data/raw/anticoagulant_dy2019.csv",
+      "rows": 481552,
+      "bytes": 71350778,
+      "modified": "2026-10-24T04:32:22",
+      "sha256": "afe8a4268400f0e3fef183132b019f4499184ad3e884db8edf951299516a1f64",
+      "source": "https://data.cms.gov/data-api/v1/dataset/2a6705e6-7a1e-460c-ba22-35249a531918/data"
+    },
+    {
+      "dataset": "Open Payments general payments (anticoagulant brand families)",
+      "class": "anticoagulant",
+      "year": 2019,
+      "file": "data/raw/openpayments_anticoagulant_2019.csv",
+      "rows": 490509,
+      "bytes": 98770518,
+      "modified": "2026-10-24T04:29:42",
+      "sha256": "395ad0ae0dacf45d023f0031dd0a83ee974cfd8e5730adf1d20afaa3e76ae440",
+      "source": "https://download.cms.gov/openpayments/PGYR2019_P06302026_06032026/OP_DTL_GNRL_PGYR2019_P06302026_06032026.csv"
+    },
+    {
+      "dataset": "Medicare Part D Prescribers by Provider and Drug",
+      "class": "anticoagulant",
+      "year": 2020,
+      "file": "data/raw/anticoagulant_dy2020.csv",
+      "rows": 491787,
+      "bytes": 72706054,
+      "modified": "2026-10-24T04:40:23",
+      "sha256": "fe0e4f00b44ab4ce906b874da66c8492a217c3442f546f10e1c2822f17fa8848",
+      "source": "https://data.cms.gov/data-api/v1/dataset/7795fe20-e80e-435a-a9ed-d2d65e05feeb/data"
+    },
+    {
+      "dataset": "Open Payments general payments (anticoagulant brand families)",
+      "class": "anticoagulant",
+      "year": 2020,
+      "file": "data/raw/openpayments_anticoagulant_2020.csv",
+      "rows": 223686,
+      "bytes": 44036808,
+      "modified": "2026-10-24T04:31:38",
+      "sha256": "89f54024c46b00b4eb39a76bec3ed2e4aac50dee60d2f5770683ecc891248dd1",
+      "source": "https://download.cms.gov/openpayments/PGYR2020_P06302026_06032026/OP_DTL_GNRL_PGYR2020_P06302026_06032026.csv"
+    },
+    {
+      "dataset": "Medicare Part D Prescribers by Provider and Drug",
+      "class": "anticoagulant",
+      "year": 2021,
+      "file": "data/raw/anticoagulant_dy2021.csv",
+      "rows": 495537,
+      "bytes": 73029467,
+      "modified": "2026-10-24T04:47:39",
+      "sha256": "8df88784918904c95bc6011d2065c02631aa69ceba21afaea2b8c8a1b50d870c",
+      "source": "https://data.cms.gov/data-api/v1/dataset/f68114ed-f854-4ffc-9c6e-ed78b5e2f8d0/data"
+    },
+    {
+      "dataset": "Open Payments general payments (anticoagulant brand families)",
+      "class": "anticoagulant",
+      "year": 2021,
+      "file": "data/raw/openpayments_anticoagulant_2021.csv",
+      "rows": 437934,
+      "bytes": 85287862,
+      "modified": "2026-10-24T04:35:18",
+      "sha256": "1044e162154153f1c6f7f7f7435b52f8d6873ec4e1f814e290673508faee2f20",
+      "source": "https://download.cms.gov/openpayments/PGYR2021_P06302026_06032026/OP_DTL_GNRL_PGYR2021_P06302026_06032026.csv"
+    },
+    {
+      "dataset": "Medicare Part D Prescribers by Provider and Drug",
+      "class": "anticoagulant",
+      "year": 2022,
+      "file": "data/raw/anticoagulant_dy2022.csv",
+      "rows": 498534,
+      "bytes": 73387174,
+      "modified": "2026-10-24T04:54:04",
+      "sha256": "54f2a3676dc73b171f1f6d4597660036c474d7e474abe9579e350e540be89a3b",
+      "source": "https://data.cms.gov/data-api/v1/dataset/b101b457-ffa4-49bb-8fd9-27c1266086e2/data"
+    },
+    {
+      "dataset": "Open Payments general payments (anticoagulant brand families)",
+      "class": "anticoagulant",
+      "year": 2022,
+      "file": "data/raw/openpayments_anticoagulant_2022.csv",
+      "rows": 362201,
+      "bytes": 69222774,
+      "modified": "2026-10-24T04:38:29",
+      "sha256": "9ece7cd1e881aff9213de5d4f6ff7db6a60b92619647a4e1769668ea8cb9e6d2",
+      "source": "https://download.cms.gov/openpayments/PGYR2022_P06302026_06032026/OP_DTL_GNRL_PGYR2022_P06302026_06032026.csv"
+    },
+    {
+      "dataset": "Medicare Part D Prescribers by Provider and Drug",
+      "class": "anticoagulant",
+      "year": 2023,
+      "file": "data/raw/anticoagulant_dy2023.csv",
+      "rows": 499862,
+      "bytes": 73490462,
+      "modified": "2026-10-24T05:00:05",
+      "sha256": "37e4afb7379cafe64e3034d4150430b8fc61f128358b7c6b58e3a447099a5ffd",
+      "source": "https://data.cms.gov/data-api/v1/dataset/e54db557-cd82-4e91-a0fe-61aad5865d69/data"
+    },
+    {
+      "dataset": "Open Payments general payments (anticoagulant brand families)",
+      "class": "anticoagulant",
+      "year": 2023,
+      "file": "data/raw/openpayments_anticoagulant_2023.csv",
+      "rows": 266152,
+      "bytes": 53792680,
+      "modified": "2026-10-24T04:43:55",
+      "sha256": "0291f0935aeb99631ef94d9ddf59a28fd6e217cb87cd062227f59105ace14aba",
+      "source": "https://download.cms.gov/openpayments/PGYR2023_P06302026_06032026/OP_DTL_GNRL_PGYR2023_P06302026_06032026.csv"
+    },
+    {
+      "dataset": "Medicare Part D Prescribers by Provider and Drug",
+      "class": "anticoagulant",
+      "year": 2024,
+      "file": "data/raw/anticoagulant_dy2024.csv",
+      "rows": 511302,
+      "bytes": 76528913,
+      "modified": "2026-10-24T05:11:35",
+      "sha256": "7d85f600cac4770a5adff8ac17c1631275e851b26f34ef0fb014338dcc8a0885",
+      "source": "https://data.cms.gov/data-api/v1/dataset/9552739e-3d05-4c1b-8eff-ecabf391e2e5/data"
+    },
+    {
+      "dataset": "Open Payments general payments (anticoagulant brand families)",
+      "class": "anticoagulant",
+      "year": 2024,
+      "file": "data/raw/openpayments_anticoagulant_2024.csv",
+      "rows": 208353,
+      "bytes": 41135051,
+      "modified": "2026-10-24T04:49:17",
+      "sha256": "dfff957085e382337506c2fa179cf2697c5e880b1e9b3da054ef398d3d06e472",
       "source": "https://download.cms.gov/openpayments/PGYR2024_P06302026_06032026/OP_DTL_GNRL_PGYR2024_P06302026_06032026.csv"
     }
   ],

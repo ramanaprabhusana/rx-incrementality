@@ -4,15 +4,18 @@
 #
 # A year's file exists only if its download completed (the stream writes to a
 # .part file and renames it at the end), so skipping existing files is safe.
+#
+# Usage: scripts/stream_all_years.sh 2019 2020 ...   (CLASS=anticoagulant to stream another class)
 set -o pipefail
 cd "$(dirname "$0")/.." || exit 1
+CLASS="${CLASS:-diabetes}"
 failed=0
 for y in "$@"; do
-  if [ -s "data/raw/openpayments_diabetes_${y}.csv" ]; then
+  if [ -s "data/raw/openpayments_${CLASS}_${y}.csv" ]; then
     echo "[$y] exists, skipping"; continue
   fi
   echo "=== $y ==="
-  if ! python3 scripts/stream_open_payments.py --year "$y" --class diabetes 2>&1 \
+  if ! python3 scripts/stream_open_payments.py --year "$y" --class "$CLASS" 2>&1 \
       | grep -E 'DONE|INCOMPLETE|NO MATCHES|Error|Traceback'; then
     echo "[$y] FAILED"; failed=1
   fi
